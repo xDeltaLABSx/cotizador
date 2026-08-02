@@ -175,7 +175,7 @@ with st.form("form_cotizacion"):
         }
         
         # Conexión automática con tu Google Drive (Reemplaza con tu URL real)
-        webhook_url = "PEGAS_AQUI_TU_URL_DE_GOOGLE_APPS_SCRIPT"
+        webhook_url = "https://script.google.com/macros/s/AKfycbyIDvYeVXplnpreEJZ8e633Dp0BSrDCUnvE__EGJ1ZX-oTr900NJuB_j_mxQ6FGd6CsAQ/exec"
         
         try:
             response = requests.post(webhook_url, json=data_dict)
