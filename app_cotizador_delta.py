@@ -128,6 +128,14 @@ st.set_page_config(page_title="Cotizador - DELTA LABS", page_icon="📐", layout
 st.title("📐 DELTA Land Aerial Building Surveyors LABS")
 st.subheader("Generador de Cotizaciones con Base de Datos en Google Drive")
 
+# Inicializar memoria de sesión para el archivo
+if "file_ready" not in st.session_state:
+    st.session_state.file_ready = False
+if "file_data" not in st.session_state:
+    st.session_state.file_data = None
+if "empresa_nombre" not in st.session_state:
+    st.session_state.empresa_nombre = "Empresa"
+
 with st.form("form_cotizacion"):
     fecha = st.text_input("Fecha", value=datetime.now().strftime("%d de %B de %Y"))
     
@@ -166,22 +174,30 @@ with st.form("form_cotizacion"):
             'saludo': saludo
         }
         
-        # Conexión automática con tu Google Drive (Google Sheets)
-        webhook_url = "https://script.google.com/macros/s/AKfycbyIDvYeVXplnpreEJZ8e633Dp0BSrDCUnvE__EGJ1ZX-oTr900NJuB_j_mxQ6FGd6CsAQ/exec"
+        # Conexión automática con tu Google Drive (Reemplaza con tu URL real)
+        webhook_url = "PEGAS_AQUI_TU_URL_DE_GOOGLE_APPS_SCRIPT"
         
         try:
             response = requests.post(webhook_url, json=data_dict)
             if response.status_code == 200:
-                st.success("¡Cotización guardada exitosamente en tu Google Drive y documento listo!")
+                st.success("¡Cotización guardada exitosamente en tu Google Drive!")
             else:
-                st.warning("Se generó el documento, pero hubo un detalle al sincronizar con Drive. Revisa tu URL.")
+                st.warning("Se procesó, pero revisa la conexión con tu Apps Script.")
         except Exception as e:
             st.error(f"Error de conexión con Google Drive: {e}")
         
-        docx_file = generar_documento_word(data_dict)
-        st.download_button(
-            label="📥 Descargar Cotización en Word (.docx)",
-            data=docx_file,
-            file_name=f"Cotizacion_{empresa.replace(' ', '_')}.docx",
-            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        )
+        # Generar archivo en memoria fuera del flujo estricto del form
+        st.session_state.file_data = generar_documento_word(data_dict)
+        st.session_state.empresa_nombre = empresa
+        st.session_state.file_ready = True
+
+# --- BOTÓN DE DESCARGA FUERA DEL FORMULARIO ---
+if st.session_state.file_ready:
+    st.markdown("---")
+    st.success("¡Documento Word listo para descargar!")
+    st.download_button(
+        label="📥 Descargar Cotización en Word (.docx)",
+        data=st.session_state.file_data,
+        file_name=f"Cotizacion_{st.session_state.empresa_nombre.replace(' ', '_')}.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
