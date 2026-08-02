@@ -137,7 +137,7 @@ with st.form("form_cotizacion"):
     
     st.markdown("#### Detalles Técnicos")
     objetivo = st.text_area("Objetivo", value="Realizar el levantamiento topográfico planialtimétrico de detalle y establecimiento de vértices de control geodésico para la delimitación, trazo y análisis altimétrico del área de estudio requerida.")
-    metodologia = st.text_area("Metodología", value="• Reconocimiento de campo y enlace con la Red Geodésica Nacional.\n• Monumentación de bancos de nivel y vértices principales con estacas de acero.\n• Levantamiento con tecnología GPS RTK en doble frecuencia y Estación Total.\n• Procesamiento de datos en gabinete y generación de entregables compatiblesกับ Trimble Coordinate Manager.")
+    metodologia = st.text_area("Metodología", value="• Reconocimiento de campo y enlace con la Red Geodésica Nacional.\n• Monumentación de bancos de nivel y vértices principales con estacas de acero.\n• Levantamiento con tecnología GPS RTK en doble frecuencia y Estación Total.\n• Procesamiento de datos en gabinete y generación de entregables compatibles con Trimble Coordinate Manager.")
     equipo = st.text_area("Equipo a utilizar", value="• Sistema GNSS RTK de Doble Frecuencia (Base y Rover).\n• Estación Total de alta precisión.\n• Vehículo aéreo no tripulado (Dron) para fotogrametría.\n• Software profesional (AutoCAD, Leica Infinity / QGIS).")
     
     st.markdown("#### Propuesta Económica")
@@ -152,7 +152,6 @@ with st.form("form_cotizacion"):
     submitted = st.form_submit_button("Generar Cotización y Enviar a Google Drive")
     
     if submitted:
-        # Empaquetar datos para guardar
         data_dict = {
             'fecha': fecha,
             'cliente': cliente,
@@ -167,11 +166,17 @@ with st.form("form_cotizacion"):
             'saludo': saludo
         }
         
-        # Opcional: Aquí se conectaría la URL de tu Webhook de Google Apps Script para guardar en la Google Sheet de tu Drive
-        # webhook_url = "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI"
-        # requests.post(webhook_url, json=data_dict)
+        # Conexión automática con tu Google Drive (Google Sheets)
+        webhook_url = "https://script.google.com/macros/s/AKfycbyIDvYeVXplnpreEJZ8e633Dp0BSrDCUnvE__EGJ1ZX-oTr900NJuB_j_mxQ6FGd6CsAQ/exec"
         
-        st.success("¡Cotización generada con éxito y lista para guardar en Google Drive!")
+        try:
+            response = requests.post(webhook_url, json=data_dict)
+            if response.status_code == 200:
+                st.success("¡Cotización guardada exitosamente en tu Google Drive y documento listo!")
+            else:
+                st.warning("Se generó el documento, pero hubo un detalle al sincronizar con Drive. Revisa tu URL.")
+        except Exception as e:
+            st.error(f"Error de conexión con Google Drive: {e}")
         
         docx_file = generar_documento_word(data_dict)
         st.download_button(
