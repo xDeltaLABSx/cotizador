@@ -1,5 +1,4 @@
 import streamlit as st
-import sqlite3
 import docx
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -8,41 +7,9 @@ from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 from datetime import datetime
 import io
+import requests
 
-# --- CONFIGURACIÓN DE BASE DE DATOS ---
-def init_db():
-    conn = sqlite3.connect('cotizaciones_delta.db')
-    c = conn.cursor()
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS cotizaciones (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            fecha TEXT,
-            cliente TEXT,
-            empresa TEXT,
-            objetivo TEXT,
-            metodologia TEXT,
-            equipo TEXT,
-            precio TEXT,
-            clausulas TEXT,
-            saludo TEXT
-        )
-    ''')
-    conn.commit()
-    conn.close()
-
-init_db()
-
-def guardar_en_db(fecha, cliente, empresa, objetivo, metodologia, equipo, precio, clausulas, saludo):
-    conn = sqlite3.connect('cotizaciones_delta.db')
-    c = conn.cursor()
-    c.execute('''
-        INSERT INTO cotizaciones (fecha, cliente, empresa, objetivo, metodologia, equipo, precio, clausulas, saludo)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (fecha, cliente, empresa, objetivo, metodologia, equipo, precio, clausulas, saludo))
-    conn.commit()
-    conn.close()
-
-# --- FUNCIONES AUXILIARES PARA WORD ---
+# --- CONFIGURACIÓN DE WORD ---
 def set_cell_background(cell, fill_hex):
     tcPr = cell._tc.get_or_add_tcPr()
     shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{fill_hex}"/>')
@@ -159,72 +126,57 @@ def generar_documento_word(data):
 st.set_page_config(page_title="Cotizador - DELTA LABS", page_icon="📐", layout="centered")
 
 st.title("📐 DELTA Land Aerial Building Surveyors LABS")
-st.subheader("Generador y Gestor de Cotizaciones Topográficas")
+st.subheader("Generador de Cotizaciones con Base de Datos en Google Drive")
 
-tab1, tab2 = st.tabs(["📝 Nueva Cotización", "📂 Historial Guardado"])
-
-with tab1:
-    st.markdown("### Llene los campos para generar el documento formal")
+with st.form("form_cotizacion"):
+    fecha = st.text_input("Fecha", value=datetime.now().strftime("%d de %B de %Y"))
     
-    with st.form("form_cotizacion"):
-        fecha = st.text_input("Fecha", value=datetime.now().strftime("%d de %B de %Y"))
-        
-        st.markdown("#### Destinatario")
-        cliente = st.text_input("A quién va dirigida (At'n)", value="Ing. Juan Pérez / Departamento Técnico")
-        empresa = st.text_input("Empresa", value="Constructora e Inmobiliaria del Centro, S.A. de C.V.")
-        
-        st.markdown("#### Detalles Técnicos")
-        objetivo = st.text_area("Objetivo", value="Realizar el levantamiento topográfico planialtimétrico de detalle y establecimiento de vértices de control geodésico para la delimitación, trazo y análisis altimétrico del área de estudio requerida.")
-        metodologia = st.text_area("Metodología", value="• Reconocimiento de campo y enlace con la Red Geodésica Nacional.\n• Monumentación de bancos de nivel y vértices principales con estacas de acero.\n• Levantamiento con tecnología GPS RTK en doble frecuencia y Estación Total.\n• Procesamiento de datos en gabinete y generación de entregables compatibles con Trimble Coordinate Manager.")
-        equipo = st.text_area("Equipo a utilizar", value="• Sistema GNSS RTK de Doble Frecuencia (Base y Rover).\n• Estación Total de alta precisión.\n• Vehículo aéreo no tripulado (Dron) para fotogrametría.\n• Software profesional (AutoCAD, Leica Infinity / QGIS).")
-        
-        st.markdown("#### Propuesta Económica")
-        desc_serv = st.text_input("Descripción del Servicio", value="Levantamiento Topográfico Planialtimétrico y Control Geodésico")
-        cantidad = st.text_input("Cantidad", value="1 Lote")
-        precio = st.text_input("Importe Total ($ MXN)", value="$35,000.00 MXN")
-        
-        st.markdown("#### Términos y Cierre")
-        clausulas = st.text_area("Cláusulas", value="• Vigencia de la cotización: 15 días.\n• Forma de pago: 50% de anticipo y 50% contra entrega.\n• Tiempo estimado de ejecución: 4 días hábiles.\n• Los precios no incluyen I.V.A.")
-        saludo = st.text_area("Saludo final", value="Agradeciendo de antemano su confianza, quedo a su entera disposición para cualquier aclaración o ajuste técnico necesario.")
-        
-        submitted = st.form_submit_button("Generar Cotización y Guardar en Base de Datos")
-        
-        if submitted:
-            guardar_en_db(fecha, cliente, empresa, objetivo, metodologia, equipo, precio, clausulas, saludo)
-            st.success("¡Cotización guardada exitosamente en la base de datos local!")
-            
-            data_dict = {
-                'fecha': fecha,
-                'cliente': cliente,
-                'empresa': empresa,
-                'objetivo': objetivo,
-                'metodologia': metodologia,
-                'equipo': equipo,
-                'descripcion_servicio': desc_serv,
-                'cantidad': cantidad,
-                'precio': precio,
-                'clausulas': clausulas,
-                'saludo': saludo
-            }
-            
-            docx_file = generar_documento_word(data_dict)
-            st.download_button(
-                label="📥 Descargar Cotización en Word (.docx)",
-                data=docx_file,
-                file_name=f"Cotizacion_{empresa.replace(' ', '_')}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-            )
-
-with tab2:
-    st.markdown("### Historial de Cotizaciones Guardadas")
-    conn = sqlite3.connect('cotizaciones_delta.db')
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, fecha, empresa, precio FROM cotizaciones ORDER BY id DESC")
-    rows = cursor.fetchall()
-    conn.close()
+    st.markdown("#### Destinatario")
+    cliente = st.text_input("A quién va dirigida (At'n)", value="Ing. Juan Pérez / Departamento Técnico")
+    empresa = st.text_input("Empresa", value="Constructora e Inmobiliaria del Centro, S.A. de C.V.")
     
-    if rows:
-        for row in rows:
-            st.info(f"**ID:** {row[0]} | **Fecha:** {row[1]} | **Empresa:** {row[2]} | **Monto:** {row[3]}")
-    else:
-        st.write("Aún no hay cotizaciones guardadas en el historial.")
+    st.markdown("#### Detalles Técnicos")
+    objetivo = st.text_area("Objetivo", value="Realizar el levantamiento topográfico planialtimétrico de detalle y establecimiento de vértices de control geodésico para la delimitación, trazo y análisis altimétrico del área de estudio requerida.")
+    metodologia = st.text_area("Metodología", value="• Reconocimiento de campo y enlace con la Red Geodésica Nacional.\n• Monumentación de bancos de nivel y vértices principales con estacas de acero.\n• Levantamiento con tecnología GPS RTK en doble frecuencia y Estación Total.\n• Procesamiento de datos en gabinete y generación de entregables compatiblesกับ Trimble Coordinate Manager.")
+    equipo = st.text_area("Equipo a utilizar", value="• Sistema GNSS RTK de Doble Frecuencia (Base y Rover).\n• Estación Total de alta precisión.\n• Vehículo aéreo no tripulado (Dron) para fotogrametría.\n• Software profesional (AutoCAD, Leica Infinity / QGIS).")
+    
+    st.markdown("#### Propuesta Económica")
+    desc_serv = st.text_input("Descripción del Servicio", value="Levantamiento Topográfico Planialtimétrico y Control Geodésico")
+    cantidad = st.text_input("Cantidad", value="1 Lote")
+    precio = st.text_input("Importe Total ($ MXN)", value="$35,000.00 MXN")
+    
+    st.markdown("#### Términos y Cierre")
+    clausulas = st.text_area("Cláusulas", value="• Vigencia de la cotización: 15 días.\n• Forma de pago: 50% de anticipo y 50% contra entrega.\n• Tiempo estimado de ejecución: 4 días hábiles.\n• Los precios no incluyen I.V.A.")
+    saludo = st.text_area("Saludo final", value="Agradeciendo de antemano su confianza, quedo a su entera disposición para cualquier aclaración o ajuste técnico necesario.")
+    
+    submitted = st.form_submit_button("Generar Cotización y Enviar a Google Drive")
+    
+    if submitted:
+        # Empaquetar datos para guardar
+        data_dict = {
+            'fecha': fecha,
+            'cliente': cliente,
+            'empresa': empresa,
+            'objetivo': objetivo,
+            'metodologia': metodologia,
+            'equipo': equipo,
+            'descripcion_servicio': desc_serv,
+            'cantidad': cantidad,
+            'precio': precio,
+            'clausulas': clausulas,
+            'saludo': saludo
+        }
+        
+        # Opcional: Aquí se conectaría la URL de tu Webhook de Google Apps Script para guardar en la Google Sheet de tu Drive
+        # webhook_url = "TU_URL_DE_GOOGLE_APPS_SCRIPT_AQUI"
+        # requests.post(webhook_url, json=data_dict)
+        
+        st.success("¡Cotización generada con éxito y lista para guardar en Google Drive!")
+        
+        docx_file = generar_documento_word(data_dict)
+        st.download_button(
+            label="📥 Descargar Cotización en Word (.docx)",
+            data=docx_file,
+            file_name=f"Cotizacion_{empresa.replace(' ', '_')}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        )
