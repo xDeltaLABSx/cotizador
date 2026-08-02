@@ -1,0 +1,59 @@
+{
+  "servicios": [
+    {
+      "id": "lev_rtk",
+      "nombre": "1. Levantamiento Topográfico Planialtimétrico",
+      "objetivo": "Realizar el levantamiento topográfico planialtimétrico de detalle y establecimiento de vértices de control para la representación morfológica, altimétrica y planimétrica del predio en estudio.",
+      "metodologia": "• Reconocimiento de linderos y puntos de referencia existentes en campo.\n• Monumentación y referenciación de bancos de nivel temporales.\n• Levantamiento con tecnología GNSS RTK en doble frecuencia y Estación Total de alta precisión para elementos arquitectónicos y colindancias.\n• Procesamiento en gabinete, cálculo y dibujo de curvas de nivel y retícula de coordenadas UTM.",
+      "equipo": "• Sistema GNSS RTK de Doble Frecuencia (Base/Rover)\n• Estación Total de alta precisión\n• Software de procesamiento espacial y CAD",
+      "unidad_default": "m2",
+      "precio_unitario_default": 15.00
+    },
+    {
+      "id": "vuelo_dron",
+      "nombre": "2. Vuelo Fotogramétrico con Dron y Nube de Puntos",
+      "objetivo": "Ejecutar un vuelo fotogramétrico de alta resolución con vehículo aéreo no tripulado (VANT) para la generación de Ortofotomapa georreferenciado, Modelo Digital de Elevaciones (MDE) y nube de puntos.",
+      "metodologia": "• Planificación del vuelo fotogramétrico garantizando un GSD inferior a 3 cm/píxel.\n• Colocación y lectura estática/RTK de Puntos de Control Terrestre (GCPs) enlazados a la Red Geodésica Nacional.\n• Ejecución de vuelo autónomo con traslape longitudinal y transversal óptimo (75%-80%).\n• Procesamiento fotogramétrico en gabinete para exportación en formatos GeoTIFF, LAS/LAZ y CAD.",
+      "equipo": "• Dron Fotogramétrico Profesional\n• Receptor GNSS RTK para control terrestre (GCP)\n• Estación de Procesamiento Espacial / DJI Terra / QGIS",
+      "unidad_default": "ha",
+      "precio_unitario_default": 1200.00
+    },
+    {
+      "id": "poligonal_geodesia",
+      "nombre": "3. Poligonal Geodésica y Red de Control (Tramos Lineales)",
+      "objetivo": "Establecimiento, lectura geodésica y monumentación de bancos de nivel y vértices de control satelital en tramo lineal o red poligonal, garantizando precisión milimétrica.",
+      "metodologia": "• Monumentación física con concreto y varilla/placa de acero conforme a normas técnicas.\n• Lectura satelital estática con receptores GNSS de doble frecuencia con tiempos continuos de rastreo.\n• Posprocesamiento de vectores en gabinete y ajuste en red de poligonales.\n• Entrega de monografías técnicas individuales y archivos vectoriales.",
+      "equipo": "• Receptores GNSS Doble Frecuencia (Lectura Estática)\n• Software de Posprocesamiento Geodésico (Leica Infinity / Trimble)",
+      "unidad_default": "km",
+      "precio_unitario_default": 8500.00
+    },
+    {
+      "id": "visita_obra",
+      "nombre": "4. Visita de Obra y Supervisión Topográfica",
+      "objetivo": "Realizar la supervisión, verificación geométrica, control de niveles de rasante y replanteo topográfico de ejes en sitio durante la ejecución de obra civil o infraestructura.",
+      "metodologia": "• Verificación inicial de los bancos de nivel y puntos de referencia de obra.\n• Replanteo geométrico de ejes, niveles de rasante o terraplenes conforme a proyecto ejecutivo.\n• Toma de puntos comparativos en campo para estimaciones de avance de obra.\n• Entrega de minuta y plano comparativo de obra ejecutada vs. proyecto.",
+      "equipo": "• Estación Total de alta precisión o Sistema GNSS RTK\n• Nivel Óptico / Digital de alta precisión",
+      "unidad_default": "jornada",
+      "precio_unitario_default": 4500.00
+    },
+    {
+      "id": "renta_brigada",
+      "nombre": "5. Renta de Brigada Topográfica Especializada",
+      "objetivo": "Arrendamiento por jornada de una brigada de topografía altamente capacitada con equipo de precisión para la ejecución de trabajos de campo a indicación expresa del cliente.",
+      "metodologia": "• Despliegue de personal técnico (1 Topógrafo Titular + 1 Cadenero/Ayudante) en sitio del proyecto.\n• Disponibilidad de equipo topográfico calibrado durante la jornada laboral normal de campo.\n• Levantamiento o replanteo de información técnica según requerimiento operativo diario.\n• Entrega de archivo crudo (CSV/TXT) al término de la jornada.",
+      "equipo": "• Estación Total o Sistema GNSS RTK (según requerimiento)\n• Accesorios de campo completos (prismas, balizas, bípodes, radios)",
+      "unidad_default": "dia",
+      "precio_unitario_default": 3800.00
+    }
+  ],
+  "exclusiones_default": [
+    "No incluye brecheo, tala, roza ni desmonte de vegetación para apertura de líneas de vista.",
+    "No incluye pago de permisos, derechos de paso ni gestiones municipales para acceso a predios privados.",
+    "El cliente garantizará el libre acceso, condiciones de seguridad y custodia de la brigada y el equipo dentro de la zona de trabajo."
+  ],
+  "entregables_default": [
+    "Archivo CAD (DWG / DXF) con planimetría, retícula UTM y curvas de nivel.",
+    "Archivo de Coordenadas (CSV compatible con Trimble Coordinate Manager y Excel).",
+    "Memoria Técnica Descriptiva y Reporte Fotográfico del proyecto."
+  ]
+}
