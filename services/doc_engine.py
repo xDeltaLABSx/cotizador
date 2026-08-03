@@ -6,6 +6,7 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 import io
+import os
 from config.settings import COMPANY_INFO, COLORS, DOC_CONFIG, obtener_fecha_formal
 
 def _hex_a_rgb(hex_str):
@@ -35,42 +36,22 @@ def _aplicar_estilo_parrafo(p, size_pt=DOC_CONFIG["BODY_SIZE_PT"], bold=False, c
 
 def generar_cotizacion_docx(datos):
     """
-    Genera el documento oficial en Word (.docx) aplicando bloques indivisibles sin saltos rotos.
+    Genera la cotización respetando el diseño dual (Hoja 1 con Logo / Hoja 2+ sin Logo).
     """
-    doc = docx.Document()
+    ruta_plantilla = os.path.join("assets", "plantilla_base.docx")
     
-    # --- MÁRGENES PROFESIONALES ---
-    for section in doc.sections:
-        section.top_margin = Inches(0.9)
-        section.bottom_margin = Inches(0.9)
-        section.left_margin = Inches(1.0)
-        section.right_margin = Inches(1.0)
-        
-        # Pie de página institucional
-        footer = section.footer
-        p_ft = footer.paragraphs[0]
-        p_ft.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run_ft = p_ft.add_run(f"{COMPANY_INFO['NAME']} — {COMPANY_INFO['SUBTITLE']}")
-        run_ft.font.name = DOC_CONFIG["FONT_NAME"]
-        run_ft.font.size = Pt(8.5)
-        run_ft.font.color.rgb = _hex_a_rgb(COLORS["SECONDARY_HEX"])
+    # --- 1. CARGA DEL MOLDE OFICIAL CON PRIMERA PÁGINA DIFERENTE ---
+    if os.path.exists(ruta_plantilla):
+        doc = docx.Document(ruta_plantilla)
+        # Blindaje: Garantiza que Python active y respete tu Hoja 1 vs Hoja 2
+        for section in doc.sections:
+            section.different_first_page_header_footer = True
+    else:
+        doc = docx.Document()
 
-    # --- 1. ENCABEZADO Y MEMBRETE ---
-    p_hdr = doc.add_paragraph()
-    p_hdr.alignment = WD_ALIGN_PARAGRAPH.RIGHT
-    run_comp = p_hdr.add_run(f"{COMPANY_INFO['NAME']}\n")
-    run_comp.font.name = DOC_CONFIG["FONT_NAME"]
-    run_comp.font.size = Pt(DOC_CONFIG["HEADER_SIZE_PT"])
-    run_comp.font.bold = True
-    run_comp.font.color.rgb = _hex_a_rgb(COLORS["PRIMARY_HEX"])
-    
-    run_sub = p_hdr.add_run(f"{COMPANY_INFO['SUBTITLE']}\nCotización Técnica y Comercial")
-    run_sub.font.name = DOC_CONFIG["FONT_NAME"]
-    run_sub.font.size = Pt(9.0)
-    run_sub.font.color.rgb = _hex_a_rgb(COLORS["SECONDARY_HEX"])
-    
-    # --- 2. FECHA FORMAL MEXICANA ---
+    # --- 2. FECHA FORMAL MEXICANA (INICIO EN HOJA 1) ---
     p_date = doc.add_paragraph()
+    p_date.paragraph_format.space_before = Pt(6)
     p_date.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     fecha_texto = obtener_fecha_formal(datos.get("ciudad"), datos.get("fecha_dt"))
     p_date.add_run(fecha_texto)
@@ -120,7 +101,6 @@ def generar_cotizacion_docx(datos):
     for idx, item in enumerate(entregables_lista):
         p_ent = doc.add_paragraph(f"• {item}")
         p_ent.paragraph_format.left_indent = Inches(0.25)
-        # Amarra todas las viñetas entre sí para que jamás se parta la lista
         es_ultimo = (idx == len(entregables_lista) - 1)
         _aplicar_estilo_parrafo(p_ent, keep_next=(not es_ultimo), keep_together=True)
 
@@ -130,7 +110,7 @@ def generar_cotizacion_docx(datos):
     _aplicar_estilo_parrafo(h5, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     conceptos = datos.get("conceptos_economicos", [])
-    num_filas = len(conceptos) + 2  # Encabezado + Conceptos + Fila Total
+    num_filas = len(conceptos) + 2
     tabla = doc.add_table(rows=num_filas, cols=3)
     tabla.alignment = WD_TABLE_ALIGNMENT.CENTER
     
@@ -184,7 +164,6 @@ def generar_cotizacion_docx(datos):
     for idx, excl in enumerate(exclusiones_lista):
         p_ex = doc.add_paragraph(f"• {excl}")
         p_ex.paragraph_format.left_indent = Inches(0.25)
-        # Obliga a que la sección completa se mueva unida a la siguiente hoja si no cabe
         es_ultimo = (idx == len(exclusiones_lista) - 1)
         _aplicar_estilo_parrafo(p_ex, color_hex=COLORS["SECONDARY_HEX"], keep_next=(not es_ultimo), keep_together=True)
         
@@ -203,7 +182,7 @@ def generar_cotizacion_docx(datos):
     p_sal = doc.add_paragraph(datos.get("saludo_final", "Agradeciendo de antemano su confianza, quedamos a su entera disposición para cualquier aclaración técnica o modificación que requiera el proyecto."))
     _aplicar_estilo_parrafo(p_sal, keep_next=True, keep_together=True)
     
-    # --- 11. BLOQUE DE FIRMA Y DATOS BANCARIOS (100% AMARRADO AL SALUDO) ---
+    # --- 11. BLOQUE DE FIRMA Y DATOS BANCARIOS ---
     p_sign = doc.add_paragraph()
     p_sign.paragraph_format.keep_with_next = False
     p_sign.paragraph_format.keep_together = True
@@ -223,7 +202,6 @@ def generar_cotizacion_docx(datos):
     run_bank.font.size = Pt(8.5)
     run_bank.font.color.rgb = _hex_a_rgb(COLORS["SECONDARY_HEX"])
     
-    # Salida en bytes puros para evitar bloqueos en Streamlit Cloud
     buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
