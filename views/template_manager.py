@@ -11,12 +11,12 @@ def render_template_manager():
     st.subheader("🛠️ Administración de Catálogo de Servicios")
     st.caption("Aquí puedes visualizar todas las plantillas, editar sus fichas técnicas, eliminar servicios y crear nuevas opciones permanentes.")
     
-    # 1. Cargamos el catálogo completo (incluyendo las 21 plantillas sincronizadas)
+    # 1. Cargamos el catálogo completo
     catalogo = obtener_catalogo_completo()
     servicios = catalogo.get("servicios", [])
 
     # =========================================================================
-    # A. LISTADO COMPLETO CON CAJAS EDITABLES Y BOTONES DE GUARDAR / BORRAR
+    # A. LISTADO COMPLETO CON LLAVES ÚNICAS POR ÍNDICE
     # =========================================================================
     st.markdown("### Catálogo Actual de Servicios")
     
@@ -27,31 +27,32 @@ def render_template_manager():
             s_id = s.get("id", f"serv_{index}")
             nombre = s.get("nombre", "Servicio sin nombre")
             
-            # Cada servicio se abre en su propia tarjeta desplegable
+            # Usamos el índice numérico en la llave para evitar duplicados absolutos
+            unique_key = f"{index}_{s_id}"
+            
             with st.expander(f"📌 {index}. {nombre}"):
                 col1, col2 = st.columns(2)
                 with col1:
-                    edit_nombre = st.text_input("Nombre de la Plantilla", value=nombre, key=f"nom_{s_id}")
-                    edit_unidad = st.text_input("Unidad por Defecto", value=s.get("unidad_default", "m2"), key=f"uni_{s_id}")
+                    edit_nombre = st.text_input("Nombre de la Plantilla", value=nombre, key=f"nom_{unique_key}")
+                    edit_unidad = st.text_input("Unidad por Defecto", value=s.get("unidad_default", "m2"), key=f"uni_{unique_key}")
                 with col2:
                     edit_precio = st.number_input(
                         "Precio Base Unitario (MXN)",
                         value=float(s.get("precio_unitario_default", 0.0)),
                         format="%.2f",
-                        key=f"pre_{s_id}"
+                        key=f"pre_{unique_key}"
                     )
                 
-                edit_obj = st.text_area("Objetivo Base", value=s.get("objetivo", ""), height=80, key=f"obj_{s_id}")
-                edit_met = st.text_area("Metodología Técnica", value=s.get("metodologia", ""), height=110, key=f"met_{s_id}")
-                edit_eq = st.text_area("Equipamiento Desplegado", value=s.get("equipo", ""), height=70, key=f"eq_{s_id}")
+                edit_obj = st.text_area("Objetivo Base", value=s.get("objetivo", ""), height=80, key=f"obj_{unique_key}")
+                edit_met = st.text_area("Metodología Técnica", value=s.get("metodologia", ""), height=110, key=f"met_{unique_key}")
+                edit_eq = st.text_area("Equipamiento Desplegado", value=s.get("equipo", ""), height=70, key=f"eq_{unique_key}")
 
                 st.markdown("---")
                 
-                # Botones de acción dentro de la misma tarjeta
                 col_btn_ed, col_btn_del = st.columns([1, 1])
                 
                 with col_btn_ed:
-                    if st.button("💾 Guardar Cambios", key=f"btn_save_{s_id}", type="primary", use_container_width=True):
+                    if st.button("💾 Guardar Cambios", key=f"btn_save_{unique_key}", type="primary", use_container_width=True):
                         if actualizar_plantilla_por_id(s_id, edit_nombre, edit_obj, edit_met, edit_eq, edit_unidad, edit_precio):
                             st.success(f"✅ ¡Cambios en '{edit_nombre}' guardados correctamente!")
                             st.rerun()
@@ -59,7 +60,7 @@ def render_template_manager():
                             st.error("❌ No se pudieron guardar los cambios en data/catalogo_seed.json.")
                 
                 with col_btn_del:
-                    if st.button("🗑️ Eliminar Plantilla", key=f"btn_del_{s_id}", use_container_width=True):
+                    if st.button("🗑️ Eliminar Plantilla", key=f"btn_del_{unique_key}", use_container_width=True):
                         if eliminar_plantilla_por_id(s_id):
                             st.warning(f"🗑️ Plantilla '{nombre}' eliminada del catálogo.")
                             st.rerun()
