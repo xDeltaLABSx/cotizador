@@ -1,59 +1,74 @@
 # models/template_model.py
 import json
 import os
+from services.plantillas import cargar_plantillas_iniciales
 
-SEED_PATH = os.path.join("data", "catalogo_seed.json")
-CUSTOM_PATH = os.path.join("data", "catalogo_custom.json")
-
-def _cargar_json(ruta):
-    if not os.path.exists(ruta):
-        return None
-    with open(ruta, "r", encoding="utf-8") as f:
-        return json.load(f)
-
-def _guardar_json(ruta, datos):
-    os.makedirs(os.path.dirname(ruta), exist_ok=True)
-    with open(ruta, "w", encoding="utf-8") as f:
-        json.dump(datos, f, ensure_ascii=False, indent=2)
+RUTA_CATALOGO = os.path.join("data", "catalogo_seed.json")
 
 def obtener_catalogo_completo():
-    """
-    Combina las plantillas base del sistema con las nuevas que hayas creado tú.
-    """
-    base = _cargar_json(SEED_PATH) or {"servicios": [], "exclusiones_default": [], "entregables_default": []}
-    custom = _cargar_json(CUSTOM_PATH) or {"servicios": []}
+    """Lee el catálogo desde JSON. Si le faltan las 21 plantillas oficiales de DELTA LABS, las sincroniza."""
+    catalogo = {"servicios": [], "entregables": [], "exclusiones": []}
     
-    # Combinamos la lista de servicios (primero los base, luego tus personalizaciones)
-    servicios_totales = base.get("servicios", []) + custom.get("servicios", [])
-    
-    return {
-        "servicios": servicios_totales,
-        "exclusiones": base.get("exclusiones_default", []),
-        "entregables": base.get("entregables_default", [])
-    }
+    if os.path.exists(RUTA_CATALOGO):
+        try:
+            with open(RUTA_CATALOGO, "r", encoding="utf-8") as f:
+                catalogo = json.load(f)
+        except Exception:
+            pass
+
+    if "servicios" not in catalogo:
+        catalogo["servicios"] = []
+
+    # Sincronizar las 21 plantillas de DELTA LABS si no están registradas
+    plantillas_base = cargar_plantillas_iniciales()
+    nombres_existentes = {s["nombre"] for s in catalogo["servicios"]}
+    hubo_cambios = False
+
+    for nombre, info in plantillas_base.items():
+        if nombre not in nombres_existentes:
+            s_id = nombre.lower().replace(" - ", "_").replace(" ", "_").replace("(", "").replace(")", "").replace("&", "y")
+            catalogo["servicios"].append({
+                "id": s_id,
+                "nombre": nombre,
+                "objetivo": info.get("objetivo", ""),
+                "metodologia": info.get("metodología", info.get("metodologia", "")),
+                "equipo": info.get("equipo", ""),
+                "unidad_default": info.get("unidad", "m2"),
+                "precio_unitario_default": info.get("precio_base", 10.0)
+            })
+            hubo_cambios = True
+
+    if hubo_cambios:
+        guardar_catalogo(catalogo)
+
+    return catalogo
+
+def guardar_catalogo(catalogo):
+    """Guarda el catálogo en disco e invalida cachés si es necesario."""
+    os.makedirs(os.path.dirname(RUTA_CATALOGO), exist_ok=True)
+    try:
+        with open(RUTA_CATALOGO, "w", encoding="utf-8") as f:
+            json.dump(catalogo, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception:
+        return False
 
 def obtener_servicio_por_id(servicio_id):
-    """
-    Busca un servicio específico para rellenar los cuadros de texto en la app.
-    """
+    """Obtiene la ficha técnica de un servicio en particular."""
     catalogo = obtener_catalogo_completo()
-    for s in catalogo["servicios"]:
+    for s in catalogo.get("servicios", []):
         if s["id"] == servicio_id:
             return s
     return None
 
 def guardar_nueva_plantilla(nombre, objetivo, metodologia, equipo, unidad, precio_base):
-    """
-    Permite guardar un texto modificado como una NUEVA plantilla permanente en tu catálogo.
-    """
-    custom = _cargar_json(CUSTOM_PATH) or {"servicios": []}
+    """Crea un nuevo servicio en el catálogo."""
+    catalogo = obtener_catalogo_completo()
+    s_id = nombre.lower().replace(" - ", "_").replace(" ", "_").replace("(", "").replace(")", "").replace("&", "y")
     
-    # Generamos un identificador único basado en el nombre
-    nuevo_id = "custom_" + nombre.lower().replace(" ", "_").replace(".", "")[:20]
-    
-    nueva_plantilla = {
-        "id": nuevo_id,
-        "nombre": f"⭐ {nombre}",
+    nuevo = {
+        "id": s_id,
+        "nombre": nombre,
         "objetivo": objetivo,
         "metodologia": metodologia,
         "equipo": equipo,
@@ -61,10 +76,25 @@ def guardar_nueva_plantilla(nombre, objetivo, metodologia, equipo, unidad, preci
         "precio_unitario_default": float(precio_base)
     }
     
-    # Si ya existe una con ese ID, la actualizamos; si no, la agregamos
-    servicios_existentes = [s for s in custom["servicios"] if s["id"] != nuevo_id]
-    servicios_existentes.append(nueva_plantilla)
-    custom["servicios"] = servicios_existentes
-    
-    _guardar_json(CUSTOM_PATH, custom)
-    return nuevo_id
+    catalogo["servicios"].append(nuevo)
+    return guardar_catalogo(catalogo)
+
+def actualizar_plantilla_por_id(s_id, nombre, objetivo, metodologia, equipo, unidad, precio_base):
+    """Actualiza una plantilla existente."""
+    catalogo = obtener_catalogo_completo()
+    for s in catalogo.get("servicios", []):
+        if s["id"] == s_id:
+            s["nombre"] = nombre
+            s["objetivo"] = objetivo
+            s["metodologia"] = metodologia
+            s["equipo"] = equipo
+            s["unidad_default"] = unidad
+            s["precio_unitario_default"] = float(precio_base)
+            break
+    return guardar_catalogo(catalogo)
+
+def eliminar_plantilla_por_id(s_id):
+    """Elimina una plantilla del catálogo permanentemente."""
+    catalogo = obtener_catalogo_completo()
+    catalogo["servicios"] = [s for s in catalogo.get("servicios", []) if s["id"] != s_id]
+    return guardar_catalogo(catalogo)
