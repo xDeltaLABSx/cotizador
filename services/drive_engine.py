@@ -1,7 +1,6 @@
 # services/drive_engine.py
 import os
 import io
-import base64
 import streamlit as st
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -10,13 +9,10 @@ from googleapiclient.http import MediaIoBaseUpload
 def obtener_servicio_drive():
     try:
         if "gcp_service_account" in st.secrets:
+            # Creamos un diccionario limpio asegurando saltos de línea reales en la llave
             secretos = dict(st.secrets["gcp_service_account"])
-            
-            # Si existe la clave codificada en Base64, la decodificamos limpiamente
-            if "private_key_b64" in secretos:
-                b64_str = secretos["private_key_b64"].replace("\n", "").replace(" ", "").strip()
-                secretos["private_key"] = base64.b64decode(b64_str).decode("utf-8")
-                del secretos["private_key_b64"]
+            if "private_key" in secretos:
+                secretos["private_key"] = secretos["private_key"].strip().replace("\\n", "\n")
 
             creds = service_account.Credentials.from_service_account_info(
                 secretos, 
