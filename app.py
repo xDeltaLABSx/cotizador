@@ -15,7 +15,7 @@ from services.plantillas import cargar_plantillas_iniciales
 # 2. CONFIGURACIÓN DE LA PÁGINA
 # ==========================================
 st.set_page_config(
-    page_title="DELTA LABS - Cotizador",
+    page_title="DELTA - Cotizador",
     page_icon="🛰️",
     layout="centered"
 )
@@ -29,7 +29,7 @@ cargar_plantillas_iniciales()
 # ==========================================
 # 4. ENCABEZADO INSTITUCIONAL
 # ==========================================
-st.title("D E L T A  C O T I Z A D O R")
+st.title("D E L T A - C O T I Z A D O R")
 st.caption(f"**{COMPANY_INFO['SUBTITLE']}** — *Sistema Profesional de Cotizaciones*")
 st.markdown("---")
 
