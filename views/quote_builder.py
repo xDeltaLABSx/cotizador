@@ -5,7 +5,9 @@ from models.template_model import obtener_catalogo_completo, obtener_servicio_po
 from models.client_model import buscar_clientes, guardar_o_actualizar_cliente
 from services.doc_engine import generar_cotizacion_docx
 from services.drive_engine import guardar_en_drive_y_excel
+from services.plantillas import cargar_plantillas_iniciales
 from config.settings import COMPANY_INFO
+
 
 def render_quote_builder():
     st.markdown("### 1. Configuración de Cliente y Proyecto")
@@ -20,7 +22,7 @@ def render_quote_builder():
         atencion = st.text_input("A quién va dirigida (Nombre) *", value=sugerencias[0][0] if sugerencias else "Ing. Juan Pérez")
         cargo = st.text_input("Cargo / Departamento", value=sugerencias[0][1] if sugerencias else "Director de Obra")
     with col2:
-        ciudad = st.text_input("Ciudad de Emisión", value=COMPANY_INFO["DEFAULT_CITY"])
+        ciudad = st.text_input("Ciudad de Emisión", value=COMPANY_INFO.get("DEFAULT_CITY", "Ciudad de México"))
         proyecto = st.text_input("Nombre / Referencia del Proyecto *", value="Levantamiento Topográfico en Predio")
         correo = st.text_input("Correo (Opcional)", value=sugerencias[0][3] if sugerencias else "")
         telefono = st.text_input("Teléfono (Opcional)", value=sugerencias[0][4] if sugerencias else "")
@@ -38,25 +40,23 @@ def render_quote_builder():
     st.markdown("---")
     st.markdown("### 2. Selección y Modificación Técnica del Servicio")
     
-    catalogo = obtener_catalogo_completo()
-    opciones = {s["nombre"]: s["id"] for s in catalogo["servicios"]}
+    # Nos aseguramos de que las plantillas externas estén cargadas sin ensuciar la vista
+    if "plantillas_dinamicas" not in st.session_state or not st.session_state["plantillas_dinamicas"]:
+        cargar_plantillas_iniciales()
+        
+    opciones = st.session_state.get("plantillas_dinamicas", {})
     
     if not opciones:
-        st.error("⚠️ No se encontraron plantillas en data/catalogo_seed.json. Verifica que el archivo esté subido en GitHub.")
+        st.error("⚠️ No se pudieron cargar las plantillas desde services/plantillas.py.")
         return
 
     seleccion_nombre = st.selectbox("Seleccione Plantilla Base de Trabajo", list(opciones.keys()))
-    servicio_id = opciones[seleccion_nombre]
-    servicio_sel = obtener_servicio_por_id(servicio_id)
+    servicio_sel = opciones[seleccion_nombre]
     
-    if not servicio_sel:
-        st.error("⚠️ Error al cargar la plantilla seleccionada.")
-        return
-    
-    # Cuadros de texto EDITABLES AL MOMENTO
-    objetivo_mod = st.text_area("Objetivo del Proyecto (Editable)", value=servicio_sel["objetivo"], height=80)
-    metodologia_mod = st.text_area("Metodología Técnica (Editable)", value=servicio_sel["metodologia"], height=130)
-    equipo_mod = st.text_area("Equipamiento Desplegado (Editable)", value=servicio_sel["equipo"], height=80)
+    # Cuadros de texto EDITABLES AL MOMENTO (cargados limpios desde tu archivo externo)
+    objetivo_mod = st.text_area("Objetivo del Proyecto (Editable)", value=servicio_sel.get("objetivo", ""), height=80)
+    metodologia_mod = st.text_area("Metodología Técnica (Editable)", value=servicio_sel.get("metodología", ""), height=130)
+    equipo_mod = st.text_area("Equipamiento Desplegado (Editable)", value=servicio_sel.get("equipo", ""), height=80)
     
     # Opción: Guardar modificación como NUEVA plantilla del catálogo
     guardar_como_nueva = st.checkbox("⭐ ¿Guardar esta modificación como NUEVA plantilla para el futuro?")
@@ -71,16 +71,25 @@ def render_quote_builder():
     with col_desc:
         desc_concepto = st.text_input("Descripción del Cobro", value=f"Servicios de Topografía - {seleccion_nombre}")
     with col_cant:
-        cant_concepto = st.text_input("Cantidad / Unidad", value=f"1 {servicio_sel.get('unidad_default', 'Lote')}")
+        cant_concepto = st.text_input("Cantidad / Unidad", value=f"1 {servicio_sel.get('unidad', 'Lote')}")
     with col_monto:
-        precio_base = servicio_sel.get('precio_unitario_default', 15000.0)
+        precio_base = servicio_sel.get('precio_base', 15000.0)
         monto_concepto = st.number_input("Importe ($ MXN)", value=float(precio_base), step=500.0)
 
     st.markdown("---")
     st.markdown("### 4. Entregables, Exclusiones y Términos")
     
-    entregables_text = st.text_area("Entregables (Uno por línea)", value="\n".join(catalogo["entregables"]), height=80)
-    exclusiones_text = st.text_area("Exclusiones (Uno por línea)", value="\n".join(catalogo["exclusiones"]), height=80)
+    entregables_text = st.text_area("Entregables (Uno por línea)", value=(
+        "Archivos CAD (DWG / DXF) con planimetría, retícula UTM y curvas de nivel.\n"
+        "Archivo de Coordenadas (CSV compatible con Trimble Coordinate Manager y Excel).\n"
+        "Memoria Técnica Descriptiva y Reporte Fotográfico del proyecto."
+    ), height=80)
+    
+    exclusiones_text = st.text_area("Exclusiones (Uno por línea)", value=(
+        "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\n"
+        "No incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\n"
+        "El cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
+    ), height=80)
     
     clausulas_text = st.text_area("Cláusulas de Trabajo y Forma de Pago", value=(
         "• Vigencia de la cotización: 15 días hábiles a partir de la fecha de emisión.\n"
@@ -110,7 +119,7 @@ def render_quote_builder():
                     objetivo=objetivo_mod,
                     metodologia=metodologia_mod,
                     equipo=equipo_mod,
-                    unidad=servicio_sel.get('unidad_default', 'Lote'),
+                    unidad=servicio_sel.get('unidad', 'Lote'),
                     precio_base=monto_concepto
                 )
                 st.toast("✅ ¡Nueva plantilla guardada en tu catálogo!")
@@ -145,7 +154,7 @@ def render_quote_builder():
             
             # 5. SUBIDA AUTOMÁTICA A GOOGLE DRIVE EN SEGUNDO PLANO
             folder_id = st.secrets.get("DRIVE_FOLDER_ID", "1l0AxPvFgqbqc-brpuqZDj1o1k50Qd3UT")
-            sheet_id = st.secrets.get("SHEETS_EXCEL_ID", "") # Opcional si ya no usas hoja de cálculo
+            sheet_id = st.secrets.get("SHEETS_EXCEL_ID", "")
             
             exito, mensaje = guardar_en_drive_y_excel(
                 datos_completos,
