@@ -9,10 +9,14 @@ from googleapiclient.http import MediaIoBaseUpload
 def obtener_servicio_drive():
     try:
         if "gcp_service_account" in st.secrets:
+            # Convertimos los secretos a un diccionario normal
             secretos = dict(st.secrets["gcp_service_account"])
-            # Limpiar posibles espacios o caracteres extraños en la llave privada
+            
+            # Limpiamos la llave privada restaurando los saltos de línea reales si viene en una sola línea
             if "private_key" in secretos:
-                secretos["private_key"] = secretos["private_key"].strip().replace("\r", "")
+                pk = secretos["private_key"].strip()
+                pk = pk.replace("\\n", "\n").replace("\r", "")
+                secretos["private_key"] = pk
             
             creds = service_account.Credentials.from_service_account_info(
                 secretos, 
