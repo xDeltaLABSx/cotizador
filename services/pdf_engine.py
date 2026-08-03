@@ -2,21 +2,25 @@
 import io
 import os
 import tempfile
+import subprocess
+import docx
+from fpdf import FPDF
+from config.settings import COMPANY_INFO
 
 def convertir_docx_a_pdf(docx_bytes=None, datos=None):
     """
-    Toma exactamente el archivo Word (.docx) recién creado con su plantilla base,
-    membrete gráfico y diseño, y lo convierte de manera fiel a PDF.
+    Convierte el archivo Word (.docx) real a PDF utilizando LibreOffice en segundo plano
+    para garantizar que el diseño, los logotipos y las tablas salgan idénticos.
+    Si el entorno no soporta el motor de sistema, utiliza un espejo estructurado limpio.
     """
     if not docx_bytes:
-        # Respaldo por si se llama sin bytes de Word
         from services.doc_engine import generar_cotizacion_docx
         if datos:
             docx_bytes = generar_cotizacion_docx(datos)
         else:
             return b""
 
-    # 1. Crear un archivo temporal seguro para el Word en el servidor
+    # 1. Crear archivo temporal para el Word
     with tempfile.NamedTemporaryFile(delete=False, suffix=".docx") as tmp_docx:
         tmp_docx.write(docx_bytes)
         tmp_docx_path = tmp_docx.name
@@ -24,11 +28,7 @@ def convertir_docx_a_pdf(docx_bytes=None, datos=None):
     tmp_pdf_path = tmp_docx_path.replace(".docx", ".pdf")
 
     try:
-        # 2. Intentar conversión de alta fidelidad con docx2pdf / wmf/emf (si el entorno lo soporta)
-        # O en su defecto, utilizamos el motor interno de renderizado de python-docx-template/libreoffice optimizado.
-        import subprocess
-        
-        # Verificamos si hay un convertidor de sistema disponible
+        # 2. Intentar conversión de alta fidelidad con LibreOffice del servidor
         proceso = subprocess.run(
             ["libreoffice", "--headless", "--convert-to", "pdf", "--outdir", os.path.dirname(tmp_docx_path), tmp_docx_path],
             stdout=subprocess.PIPE,
@@ -41,29 +41,15 @@ def convertir_docx_a_pdf(docx_bytes=None, datos=None):
                 pdf_bytes = f.read()
             return pdf_bytes
         else:
-            raise Exception("Motor de sistema no disponible, usando renderizador espejo nativo.")
+            raise Exception("Motor gráfico no disponible.")
 
     except Exception:
-        # 3. CONVERSOR ESPEJO NATIVO EN MEMORIA (Garantiza cero fallos en Streamlit Cloud)
-        # Convierte el flujo exacto del Word en un PDF limpio estructurado a partir del documento base
-        from fpdf import FPDF
-        
+        # 3. CONVERSOR ESPEJO DE RESPALDO (Lee el docx recién creado párrafo por párrafo)
         pdf = FPDF(orientation='P', unit='mm', format='A4')
         pdf.set_auto_page_break(auto=True, margin=15)
         pdf.add_page()
         
-        # Incrustamos tu imagen de membrete oficial exactamente igual que en el Word
-        ruta_img = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "assets", "encabezado.png")
-        if os.path.exists(ruta_img):
-            try:
-                pdf.image(ruta_img, x=15, y=10, w=180)
-            except Exception:
-                pass
-        
-        pdf.ln(35) # Espacio de respiración idéntico al de tu plantilla
-        
-        # Extraemos texto limpio directamente de los párrafos del Word generado para asegurar idénticidad
-        import docx
+        # Leer el contenido exacto del docx generado
         doc_leido = docx.Document(io.BytesIO(docx_bytes))
         
         pdf.set_font("Helvetica", "", 10)
@@ -71,9 +57,8 @@ def convertir_docx_a_pdf(docx_bytes=None, datos=None):
         
         for p in doc_leido.paragraphs:
             if p.text.strip():
-                # Sanitizamos texto para evitar errores de codificación
                 texto_limpio = p.text.encode("latin-1", "replace").decode("latin-1")
-                is_title = p.text.strip().startswith(("1.", "2.", "3.", "4.", "5.", "6.", "7.", "At'n", "Ref:"))
+                is_title = p.text.strip().startswith(("1.", "2.", "3.", "4.", "5.", "6.", "7.", "At'n", "Ref:", "Fecha:"))
                 
                 if is_title:
                     pdf.set_font("Helvetica", "B", 10.5)
@@ -88,7 +73,6 @@ def convertir_docx_a_pdf(docx_bytes=None, datos=None):
         return bytes(pdf.output())
 
     finally:
-        # Limpieza de archivos temporales
         if os.path.exists(tmp_docx_path):
             os.remove(tmp_docx_path)
         if os.path.exists(tmp_pdf_path):
