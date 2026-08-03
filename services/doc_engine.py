@@ -7,10 +7,15 @@ from docx.oxml import parse_xml
 from docx.oxml.ns import nsdecls
 import io
 import os
-from config.settings import COMPANY_INFO, COLORS, DOC_CONFIG, obtener_fecha_formal
+from config.settings import COMPANY_INFO, COLORS, obtener_fecha_formal
 
 # --- RUTA ABSOLUTA AL RAÍZ DEL PROYECTO ---
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# --- CONFIGURACIÓN TIPOGRÁFICA EJECUTIVA ---
+FONT_NAME = "Segoe UI"
+BODY_SIZE_PT = 10.5
+TITLE_SIZE_PT = 13.0
 
 def _hex_a_rgb(hex_str):
     """Convierte color hexadecimal en objeto RGBColor para python-docx."""
@@ -27,37 +32,41 @@ def _evitar_salto_fila(row):
     trPr = row._tr.get_or_add_trPr()
     trPr.append(parse_xml(f'<w:cantSplit {nsdecls("w")}/>'))
 
-def _aplicar_estilo_parrafo(p, size_pt=DOC_CONFIG["BODY_SIZE_PT"], bold=False, color_hex=COLORS["TEXT_HEX"], keep_next=False, keep_together=True):
-    """Aplica formato tipográfico y amarra párrafos para evitar saltos huérfanos."""
+def _aplicar_estilo_parrafo(p, size_pt=BODY_SIZE_PT, bold=False, color_hex=COLORS["TEXT_HEX"], keep_next=False, keep_together=True):
+    """Aplica Segoe UI y protección contra saltos huérfanos."""
     p.paragraph_format.keep_with_next = keep_next
     p.paragraph_format.keep_together = keep_together
     for run in p.runs:
-        run.font.name = DOC_CONFIG["FONT_NAME"]
+        run.font.name = FONT_NAME
         run.font.size = Pt(size_pt)
         run.font.bold = bold
         run.font.color.rgb = _hex_a_rgb(color_hex)
 
 def generar_cotizacion_docx(datos):
     """
-    Genera la cotización cargando tu documento Word (.docx) base y limpiando párrafos vacíos.
+    Genera la cotización en Word (.docx) con Segoe UI 10.5, aire bajo el encabezado y Metadatos Windows.
     """
     ruta_plantilla = os.path.join(BASE_DIR, "assets", "plantilla_base.docx")
     
-    # --- 1. CARGA DEL MOLDE OFICIAL Y LIMPIEZA DE PÁRRAFOS FANTASMA ---
+    # 1. Carga del molde oficial y limpieza de párrafos vacíos ("Enter" extra)
     if os.path.exists(ruta_plantilla):
         doc = docx.Document(ruta_plantilla)
-        # ASPIRADORA TÉCNICA: Borra cualquier "Enter" o salto de página guardado en el cuerpo del Word
-        # sin tocar los encabezados ni los pies de página
         for p in list(doc.paragraphs):
             p._element.getparent().remove(p._element)
         for t in list(doc.tables):
             t._element.getparent().remove(t._element)
     else:
-        raise FileNotFoundError(f"No se encontró el archivo base en: {ruta_plantilla}. Verifica que esté subido en la carpeta assets/ de GitHub.")
+        raise FileNotFoundError(f"No se encontró el archivo base en: {ruta_plantilla}. Verifica tu carpeta assets/ en GitHub.")
 
-    # --- 2. FECHA FORMAL MEXICANA (AHORA SÍ EN LA LÍNEA 1 DE LA HOJA 1) ---
+    # --- INYECCIÓN DE METADATOS DE WINDOWS (AUTOR, TÍTULO, ETIQUETAS) ---
+    doc.core_properties.author = datos.get("autor_meta", "DELTA")
+    doc.core_properties.title = datos.get("titulo_meta", "")
+    doc.core_properties.keywords = datos.get("etiquetas_meta", "")
+    doc.core_properties.subject = "Cotización Técnica de Topografía y Geodesia"
+
+    # --- 2. FECHA FORMAL MEXICANA (CON ESPACIO DE RESPIRACIÓN BAJO EL ENCABEZADO) ---
     p_date = doc.add_paragraph()
-    p_date.paragraph_format.space_before = Pt(6)
+    p_date.paragraph_format.space_before = Pt(36)  # Crea 1.25 cm de aire para no pegar con el gráfico
     p_date.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     fecha_texto = obtener_fecha_formal(datos.get("ciudad"), datos.get("fecha_dt"))
     p_date.add_run(fecha_texto)
@@ -77,7 +86,7 @@ def generar_cotizacion_docx(datos):
     # --- 4. SECCIÓN 1: OBJETIVO DEL PROYECTO ---
     h1 = doc.add_heading(level=2)
     h1.add_run("1. Objetivo del Proyecto")
-    _aplicar_estilo_parrafo(h1, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
+    _aplicar_estilo_parrafo(h1, size_pt=TITLE_SIZE_PT, bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     p_obj = doc.add_paragraph(datos.get("objetivo", ""))
     _aplicar_estilo_parrafo(p_obj, keep_together=True)
@@ -85,7 +94,7 @@ def generar_cotizacion_docx(datos):
     # --- 5. SECCIÓN 2: METODOLOGÍA DE TRABAJO ---
     h2 = doc.add_heading(level=2)
     h2.add_run("2. Metodología y Procedimiento Técnico")
-    _aplicar_estilo_parrafo(h2, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
+    _aplicar_estilo_parrafo(h2, size_pt=TITLE_SIZE_PT, bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     p_met = doc.add_paragraph(datos.get("metodologia", ""))
     _aplicar_estilo_parrafo(p_met, keep_together=True)
@@ -93,15 +102,15 @@ def generar_cotizacion_docx(datos):
     # --- 6. SECCIÓN 3: EQUIPAMIENTO ESPECIALIZADO ---
     h3 = doc.add_heading(level=2)
     h3.add_run("3. Instrumentación y Equipo Desplegado")
-    _aplicar_estilo_parrafo(h3, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
+    _aplicar_estilo_parrafo(h3, size_pt=TITLE_SIZE_PT, bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     p_eq = doc.add_paragraph(datos.get("equipo", ""))
     _aplicar_estilo_parrafo(p_eq, keep_together=True)
     
-    # --- 7. SECCIÓN 4: ENTREGABLES (BLOQUE INDIVISIBLE) ---
+    # --- 7. SECCIÓN 4: ENTREGABLES ---
     h4 = doc.add_heading(level=2)
     h4.add_run("4. Entregables del Proyecto")
-    _aplicar_estilo_parrafo(h4, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
+    _aplicar_estilo_parrafo(h4, size_pt=TITLE_SIZE_PT, bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     entregables_lista = datos.get("entregables", [])
     for idx, item in enumerate(entregables_lista):
@@ -113,7 +122,7 @@ def generar_cotizacion_docx(datos):
     # --- 8. SECCIÓN 5: PROPUESTA ECONÓMICA ---
     h5 = doc.add_heading(level=2)
     h5.add_run("5. Propuesta Económica")
-    _aplicar_estilo_parrafo(h5, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
+    _aplicar_estilo_parrafo(h5, size_pt=TITLE_SIZE_PT, bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     conceptos = datos.get("conceptos_economicos", [])
     num_filas = len(conceptos) + 2
@@ -147,7 +156,6 @@ def generar_cotizacion_docx(datos):
                 _set_cell_background(col_c, COLORS["ZEBRA_HEX"])
         _evitar_salto_fila(tabla.rows[idx + 1])
                 
-    # Fila de Total
     celda_tot_lbl = tabla.rows[-1].cells[1]
     celda_tot_lbl.text = "TOTAL (Sin I.V.A.):"
     celda_tot_lbl.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
@@ -161,10 +169,10 @@ def generar_cotizacion_docx(datos):
     
     doc.add_paragraph()
     
-    # --- 9. SECCIÓN 6: EXCLUSIONES (BLOQUE INDIVISIBLE CONTRA SALTOS ROTOS) ---
+    # --- 9. SECCIÓN 6: EXCLUSIONES ---
     h6 = doc.add_heading(level=2)
     h6.add_run("6. Premisas Técnicas y Exclusiones")
-    _aplicar_estilo_parrafo(h6, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
+    _aplicar_estilo_parrafo(h6, size_pt=TITLE_SIZE_PT, bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     exclusiones_lista = datos.get("exclusiones", [])
     for idx, excl in enumerate(exclusiones_lista):
@@ -176,7 +184,7 @@ def generar_cotizacion_docx(datos):
     # --- 10. CLÁUSULAS Y SALUDO FINAL ---
     h7 = doc.add_heading(level=2)
     h7.add_run("7. Condiciones de Trabajo y Forma de Pago")
-    _aplicar_estilo_parrafo(h7, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
+    _aplicar_estilo_parrafo(h7, size_pt=TITLE_SIZE_PT, bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     p_cl = doc.add_paragraph(datos.get("clausulas", (
         "• Vigencia de cotización: 15 días hábiles a partir de su emisión.\n"
@@ -195,7 +203,7 @@ def generar_cotizacion_docx(datos):
     p_sign.paragraph_format.space_before = Pt(18)
     
     run_att = p_sign.add_run("Atentamente,\n\n\n\n")
-    run_att.font.name = DOC_CONFIG["FONT_NAME"]
+    run_att.font.name = FONT_NAME
     
     run_name = p_sign.add_run(f"{COMPANY_INFO['LEGAL_REP']}\n")
     run_name.bold = True
