@@ -32,7 +32,7 @@ def obtener_servicio_por_id(servicio_id):
             return s
     return None
 
-def guardar_nueva_plantilla(nombre, objetivo, metodologia, equipo, unidad, precio_base):
+def guardar_nueva_plantilla(nombre, objetivo, metodologia, equipo, unidad, precio_base, entregables="", exclusiones=""):
     catalogo = obtener_catalogo_completo()
     s_id = nombre.lower().replace(" - ", "_").replace(" ", "_").replace("(", "").replace(")", "").replace("&", "y")
     
@@ -46,12 +46,14 @@ def guardar_nueva_plantilla(nombre, objetivo, metodologia, equipo, unidad, preci
         "precio_unitario_default": float(precio_base),
         "area_min": 1.0,
         "precio_min": float(precio_base),
-        "precio_extra": 0.0
+        "precio_extra": 0.0,
+        "entregables": entregables,
+        "exclusiones": exclusiones
     }
     catalogo["servicios"].append(nuevo)
     return guardar_catalogo(catalogo)
 
-def actualizar_plantilla_por_id(s_id, nombre, objetivo, metodologia, equipo, unidad, precio_base):
+def actualizar_plantilla_por_id(s_id, nombre, objetivo, metodologia, equipo, unidad, precio_base, entregables="", exclusiones=""):
     catalogo = obtener_catalogo_completo()
     for s in catalogo.get("servicios", []):
         if s["id"] == s_id:
@@ -62,6 +64,8 @@ def actualizar_plantilla_por_id(s_id, nombre, objetivo, metodologia, equipo, uni
             s["unidad_default"] = unidad
             s["precio_unitario_default"] = float(precio_base)
             s["precio_min"] = float(precio_base)
+            s["entregables"] = entregables
+            s["exclusiones"] = exclusiones
             break
     return guardar_catalogo(catalogo)
 
