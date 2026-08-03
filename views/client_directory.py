@@ -1,5 +1,6 @@
 # views/client_directory.py
 import streamlit as st
+import pandas as pd
 from models.client_model import obtener_todos_los_clientes, eliminar_cliente
 
 def render_client_directory():
@@ -15,23 +16,40 @@ def render_client_directory():
 
     st.markdown("### Listado de Clientes y Contactos")
     
-    # Mostramos cada cliente con su botón individual para eliminar
+    # Transformamos los datos a una estructura de tabla limpia
+    lista_datos = []
     for c in clientes:
         cliente_id, contacto, cargo, empresa, correo, telefono, ultimo_reg = c
-        
-        with st.container():
-            col1, col2, col3 = st.columns([3, 3, 1])
-            with col1:
-                st.markdown(f"**🏢 Empresa:** {empresa}")
-                st.markdown(f"👤 **Contacto:** {contacto} ({cargo})")
-            with col2:
-                st.markdown(f"📧 **Correo:** {correo if correo else 'N/D'}")
-                st.markdown(f"📞 **Teléfono:** {telefono if telefono else 'N/D'}")
-                st.caption(f"Última interacción: {ultimo_reg}")
-            with col3:
-                # Botón de eliminación con clave única
-                if st.button("🗑️ Borrar", key=f"del_client_{cliente_id}", type="secondary"):
-                    eliminar_cliente(cliente_id)
-                    st.toast(f"🗑️ Cliente {empresa} eliminado con éxito.")
-                    st.rerun()
-            st.divider()
+        lista_datos.append({
+            "ID": cliente_id,
+            "Empresa": empresa,
+            "Contacto": contacto,
+            "Cargo": cargo,
+            "Correo": correo if correo else "N/D",
+            "Teléfono": telefono if telefono else "N/D",
+            "Última Interacción": ultimo_reg
+        })
+    
+    df_clientes = pd.DataFrame(lista_datos)
+    
+    # Mostramos la tabla principal sin la columna ID para mayor limpieza visual
+    st.dataframe(df_clientes.drop(columns=["ID"]), use_container_width=True, hide_index=True)
+    
+    st.markdown("---")
+    st.markdown("### 🗑️ Eliminar un Cliente Registrado")
+    
+    # Selector rápido para elegir y borrar un cliente por su empresa y contacto de forma segura
+    opciones_borrar = {f"{row['Empresa']} — {row['Contacto']} (ID: {row['ID']})": row['ID'] for row in lista_datos}
+    
+    col_sel, col_btn = st.columns([3, 1])
+    with col_sel:
+        cliente_seleccionado_label = st.selectbox("Selecciona el cliente a eliminar", list(opciones_borrar.keys()), key="select_borrar_cliente")
+    
+    with col_btn:
+        st.write("") # Espaciador vertical
+        st.write("")
+        if st.button("🗑️ Borrar Cliente", type="primary", use_container_width=True):
+            id_a_borrar = opciones_borrar[cliente_seleccionado_label]
+            eliminar_cliente(id_a_borrar)
+            st.toast("🗑️ Cliente eliminado correctamente de la base de datos.")
+            st.rerun()
