@@ -42,15 +42,12 @@ def render_quote_builder():
 
     st.markdown("---")
 
-    # =========================================================================
+   # =========================================================================
     # 2. SELECCIÓN Y MODIFICACIÓN TÉCNICA DEL SERVICIO
     # =========================================================================
     st.markdown("### 2. Selección y Modificación Técnica del Servicio")
     
-    # 1. Leer el catálogo oficial desde models.template_model (conectado a tu Administrador de Plantillas)
     catalogo = obtener_catalogo_completo()
-    
-    # --- SINCRONIZACIÓN AUTOMÁTICA CON LAS 21 PLANTILLAS TÉCNICAS ---
     plantillas_base = cargar_plantillas_iniciales()
     
     if not catalogo:
@@ -71,9 +68,10 @@ def render_quote_builder():
                 "precio_unitario_default": s_data.get("precio_base", 10.0),
                 "area_min": s_data.get("area_min", 1.0),
                 "precio_min": s_data.get("precio_min", 10.0),
-                "precio_extra": s_data.get("precio_extra", 0.0)
+                "precio_extra": s_data.get("precio_extra", 0.0),
+                "entregables": s_data.get("entregables", ""),
+                "exclusiones": s_data.get("exclusiones", "")
             })
-    # -----------------------------------------------------------------
 
     opciones = {s["nombre"]: s["id"] for s in catalogo["servicios"]}
     
@@ -81,76 +79,59 @@ def render_quote_builder():
         st.error("⚠️ No se encontraron plantillas en tu catálogo ni en services/plantillas.py.")
         return
 
+    # Detectar cambio de servicio para forzar la actualización de la vista
     seleccion_nombre = st.selectbox("Seleccione Plantilla Base de Trabajo", list(opciones.keys()))
     servicio_id = opciones[seleccion_nombre]
     
-    # Buscamos la ficha seleccionada en el catálogo vinculado
+    if "servicio_previo_id" not in st.session_state:
+        st.session_state["servicio_previo_id"] = servicio_id
+
+    if st.session_state["servicio_previo_id"] != servicio_id:
+        st.session_state["servicio_previo_id"] = servicio_id
+        # Limpiamos las llaves de los text_area para que recarguen el texto del nuevo servicio
+        for k in ["box_entregables_dinamico", "box_exclusiones_dinamico"]:
+            if k in st.session_state:
+                del st.session_state[k]
+        st.rerun()
+
     servicio_sel = next((s for s in catalogo["servicios"] if s["id"] == servicio_id or s["nombre"] == seleccion_nombre), None)
     
     if not servicio_sel:
         st.error("⚠️ Error al cargar la plantilla seleccionada.")
         return
     
-    # Cuadros de texto EDITABLES AL MOMENTO (conectados con tu ficha técnica)
-    objetivo_mod = st.text_area("Objetivo del Proyecto (Editable)", value=servicio_sel.get("objetivo", ""), height=80)
-    metodologia_mod = st.text_area("Metodología Técnica (Editable)", value=servicio_sel.get("metodologia", ""), height=130)
-    equipo_mod = st.text_area("Equipamiento Desplegado (Editable)", value=servicio_sel.get("equipo", ""), height=80)
+    # Cuadros de texto EDITABLES AL MOMENTO
+    objetivo_mod = st.text_area("Objetivo del Proyecto (Editable)", value=servicio_sel.get("objetivo", ""), height=80, key=f"obj_{servicio_id}")
+    metodologia_mod = st.text_area("Metodología Técnica (Editable)", value=servicio_sel.get("metodologia", ""), height=130, key=f"met_{servicio_id}")
+    equipo_mod = st.text_area("Equipamiento Desplegado (Editable)", value=servicio_sel.get("equipo", ""), height=80, key=f"eq_{servicio_id}")
     
-    # Opción: Guardar modificación como NUEVA plantilla del catálogo (Se vinculará a tu Administrador de Plantillas)
-    guardar_como_nueva = st.checkbox("⭐ ¿Guardar esta modificación como NUEVA plantilla para el futuro?")
+    guardar_como_nueva = st.checkbox("⭐ ¿Guardar esta modificación como NUEVA plantilla para el futuro?", key=f"chk_{servicio_id}")
     nombre_nueva_plantilla = ""
     if guardar_como_nueva:
-        nombre_nueva_plantilla = st.text_input("Nombre de tu nueva plantilla", placeholder="Ej. Vuelo Dron - Corredor Vial")
+        nombre_nueva_plantilla = st.text_input("Nombre de tu nueva plantilla", placeholder="Ej. Vuelo Dron - Corredor Vial", key=f"Nom_new_{servicio_id}")
     
     st.markdown("---")
 
     # =========================================================================
-    # 3. PROPUESTA ECONÓMICA (Cálculo Dinámico según m2, ha, jornada, lote o semana)
+    # 3. PROPUESTA ECONÓMICA
     # =========================================================================
     st.markdown("### 3. Propuesta Económica")
     
-    # 1. Obtenemos los parámetros exactos de tu tabla oficial
     area_min = float(servicio_sel.get("area_min", 1.0))
     precio_min = float(servicio_sel.get("precio_min", 1000.0))
     precio_extra = float(servicio_sel.get("precio_extra", 0.0))
     unidad_act = str(servicio_sel.get("unidad_default", servicio_sel.get("unidad", "m2"))).strip().lower()
     
-    # 2. Configuración dinámica del título y comportamiento según la unidad
     config_unidades = {
-        "m2": {
-            "etiqueta": "Área del Proyecto [m2]:",
-            "paso": 50.0,
-            "ayuda": "Superficie total a levantar en metros cuadrados."
-        },
-        "ha": {
-            "etiqueta": "Superficie del Proyecto [ha]:",
-            "paso": 1.0,
-            "ayuda": "Superficie total en hectáreas."
-        },
-        "jornada": {
-            "etiqueta": "Número de Jornadas [jornadas]:",
-            "paso": 1.0,
-            "ayuda": "Días o jornadas operativas de trabajo en campo/gabinete."
-        },
-        "lote": {
-            "etiqueta": "Cantidad de Lotes / Puntos [lotes]:",
-            "paso": 1.0,
-            "ayuda": "Número de lotes, vértices o líneas base a procesar."
-        },
-        "semana": {
-            "etiqueta": "Tiempo de Asignación [semanas]:",
-            "paso": 1.0,
-            "ayuda": "Semanas completas de renta o asignación de brigada."
-        }
+        "m2": {"etiqueta": "Área del Proyecto [m2]:", "paso": 50.0, "ayuda": "Superficie total en metros cuadrados."},
+        "ha": {"etiqueta": "Superficie del Proyecto [ha]:", "paso": 1.0, "ayuda": "Superficie total en hectáreas."},
+        "jornada": {"etiqueta": "Número de Jornadas [jornadas]:", "paso": 1.0, "ayuda": "Días u operaciones en campo/gabinete."},
+        "lote": {"etiqueta": "Cantidad de Lotes / Puntos [lotes]:", "paso": 1.0, "ayuda": "Número de lotes o líneas base."},
+        "semana": {"etiqueta": "Tiempo de Asignación [semanas]:", "paso": 1.0, "ayuda": "Semanas de renta o brigada."}
     }
 
-    cfg = config_unidades.get(unidad_act, {
-        "etiqueta": f"Cantidad / Volumen [{unidad_act}]:",
-        "paso": 1.0,
-        "ayuda": f"Ingrese la cantidad total en {unidad_act}."
-    })
+    cfg = config_unidades.get(unidad_act, {"etiqueta": f"Cantidad [{unidad_act}]:", "paso": 1.0, "ayuda": f"Cantidad en {unidad_act}."})
     
-    # 3. Captura dinámica con el título y unidad correctos
     col_cant, col_info_calc = st.columns([1, 2])
     with col_cant:
         cantidad_area = st.number_input(
@@ -163,7 +144,6 @@ def render_quote_builder():
             key=f"input_cant_{servicio_id}"
         )
         
-    # 4. Lógica de cálculo automática respetando el mínimo de tu tabla
     if cantidad_area <= area_min:
         estimado_auto = precio_min
         excedente_qty = 0.0
@@ -183,10 +163,9 @@ def render_quote_builder():
 
     st.markdown("---")
 
-    # 5. Ajuste final modificable por el usuario
     col_desc, col_monto, col_iva = st.columns([2, 1.2, 1])
     with col_desc:
-        desc_concepto = st.text_input("Descripción del Cobro", value=f"Servicios de Topografía - {seleccion_nombre}")
+        desc_concepto = st.text_input("Descripción del Cobro", value=f"Servicios de Topografía - {seleccion_nombre}", key=f"desc_{servicio_id}")
     
     with col_monto:
         monto_concepto = st.number_input(
@@ -195,11 +174,11 @@ def render_quote_builder():
             min_value=0.0,
             step=500.0,
             format="%.2f",
-            help="Puedes modificar o redondear libremente el monto antes de generar tu Word."
+            key=f"monto_{servicio_id}"
         )
         
     with col_iva:
-        incluye_iva = st.checkbox("Incluir IVA (16%)", value=False)
+        incluye_iva = st.checkbox("Incluir IVA (16%)", value=False, key=f"iva_{servicio_id}")
         if incluye_iva:
             total_calc = monto_concepto * 1.16
             st.metric(label="Total con IVA", value=f"${total_calc:,.2f}")
@@ -208,20 +187,11 @@ def render_quote_builder():
 
     st.markdown("---")
 
-# =========================================================================
-    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS (Con actualización automática por servicio)
+    # =========================================================================
+    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS (Vinculados dinámicamente)
     # =========================================================================
     st.markdown("### 4. Entregables, Exclusiones y Términos")
     
-    # 1. Detectamos si el usuario cambió de servicio en el selectbox superior
-    if "ultimo_servicio_seleccionado" not in st.session_state or st.session_state["ultimo_servicio_seleccionado"] != servicio_id:
-        st.session_state["ultimo_servicio_seleccionado"] = servicio_id
-        # Limpiamos las memorias temporales para forzar la carga de los nuevos textos del servicio
-        for k in ["cache_entregables", "cache_exclusiones"]:
-            if k in st.session_state:
-                del st.session_state[k]
-
-    # 2. Obtenemos los textos oficiales definidos en el servicio activo
     entregables_default = servicio_sel.get("entregables", (
         "Archivos CAD (DWG / DXF) con planimetría, retícula UTM y curvas de nivel.\n"
         "Archivo de Coordenadas (CSV compatible con Trimble Coordinate Manager y Excel).\n"
@@ -234,23 +204,16 @@ def render_quote_builder():
         "El cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
     ))
 
-    # 3. Inicializamos los valores en session_state si no existen para este servicio
-    if "cache_entregables" not in st.session_state:
-        st.session_state["cache_entregables"] = entregables_default
-    if "cache_exclusiones" not in st.session_state:
-        st.session_state["cache_exclusiones"] = exclusiones_default
-
-    # 4. Cajas de texto conectadas al estado para que cambien al instante
     entregables_text = st.text_area(
         "Entregables (Uno por línea)", 
-        value=st.session_state["cache_entregables"], 
+        value=entregables_default, 
         height=95,
         key="box_entregables_dinamico"
     )
     
     exclusiones_text = st.text_area(
         "Exclusiones (Uno por línea)", 
-        value=st.session_state["cache_exclusiones"], 
+        value=exclusiones_default, 
         height=95,
         key="box_exclusiones_dinamico"
     )
@@ -267,14 +230,12 @@ def render_quote_builder():
         key="box_saludo_dinamico"
     )
 
-    # --- MEMORIA DE SESIÓN PARA EL ARCHIVO WORD ---
     if "doc_word" not in st.session_state:
         st.session_state.doc_word = None
     if "doc_nombre" not in st.session_state:
         st.session_state.doc_nombre = ""
 
     st.markdown("---")
-    
     # =========================================================================
     # 5. EMISIÓN DE COTIZACIÓN Y RESPALDO
     # =========================================================================
