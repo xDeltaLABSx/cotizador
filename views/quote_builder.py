@@ -4,8 +4,7 @@ from datetime import datetime
 from models.template_model import obtener_catalogo_completo, obtener_servicio_por_id, guardar_nueva_plantilla
 from models.client_model import buscar_clientes, guardar_o_actualizar_cliente
 from services.doc_engine import generar_cotizacion_docx
-from services.pdf_engine import convertir_docx_a_pdf
-from services.drive_engine import guardar_en_drive_y_excel
+from services.drive_engine import guardar_en_docx_y_excel  # (O tu función de respaldo en Drive)
 from config.settings import COMPANY_INFO
 
 def render_quote_builder():
@@ -91,11 +90,9 @@ def render_quote_builder():
     
     saludo_text = st.text_input("Saludo de Cierre", value="Agradeciendo de antemano su confianza, quedamos a su entera disposición para cualquier aclaración técnica.")
 
-    # --- MEMORIA DE SESIÓN PARA LOS ARCHIVOS ---
+    # --- MEMORIA DE SESIÓN PARA EL ARCHIVO WORD ---
     if "doc_word" not in st.session_state:
         st.session_state.doc_word = None
-    if "doc_pdf" not in st.session_state:
-        st.session_state.doc_pdf = None
     if "doc_nombre" not in st.session_state:
         st.session_state.doc_nombre = ""
     if "datos_cache" not in st.session_state:
@@ -103,7 +100,7 @@ def render_quote_builder():
 
     st.markdown("---")
     
-    if st.button("🚀 Procesar y Generar Archivos (Word + PDF)", type="primary", use_container_width=True):
+    if st.button("🚀 Generar Documento Word (.docx)", type="primary", use_container_width=True):
         try:
             # 1. Guardar cliente en la base de datos local
             guardar_o_actualizar_cliente(atencion, cargo, empresa, correo, telefono)
@@ -120,7 +117,7 @@ def render_quote_builder():
                 )
                 st.toast("✅ ¡Nueva plantilla guardada en tu catálogo!")
 
-            # 3. Empaquetar todos los datos incluyendo metadatos
+            # 3. Empaquetar datos incluyendo metadatos
             datos_completos = {
                 "ciudad": ciudad,
                 "fecha_dt": datetime.now(),
@@ -141,56 +138,22 @@ def render_quote_builder():
                 "etiquetas_meta": etiquetas_meta
             }
             
-            # 4. Generar primero el documento Word maestro con la plantilla base, membrete y diseño
+            # 4. Generar el documento Word maestro basado en tu plantilla oficial
             st.session_state.doc_word = generar_cotizacion_docx(datos_completos)
-            
-            # 5. Generar el PDF tomando EXACTAMENTE el Word recién creado como base gemela
-            st.session_state.doc_pdf = convertir_docx_a_pdf(docx_bytes=st.session_state.doc_word, datos=datos_completos)
-            
             st.session_state.doc_nombre = nombre_personalizado.replace(" ", "_")
             st.session_state.datos_cache = datos_completos
             
-            st.success("✅ ¡Archivos Word (.docx) y PDF (.pdf) generados de forma homologada con éxito!")
+            st.success("✅ ¡Documento Word generado con éxito y listo para descargar!")
             
         except Exception as error:
-            st.error(f"⚠️ Ocurrió un detalle técnico al procesar los archivos: {str(error)}")
+            st.error(f"⚠️ Ocurrió un detalle técnico al procesar el archivo: {str(error)}")
 
-    # Botones de descarga y sincronización con Google Drive / Excel
-    if st.session_state.doc_word and st.session_state.doc_pdf:
-        col_d1, col_d2 = st.columns(2)
-        with col_d1:
-            st.download_button(
-                label="📥 Descargar Documento Word (.docx)",
-                data=st.session_state.doc_word,
-                file_name=f"{st.session_state.doc_nombre}.docx",
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True
-            )
-        with col_d2:
-            st.download_button(
-                label="📥 Descargar Documento PDF (.pdf)",
-                data=st.session_state.doc_pdf,
-                file_name=f"{st.session_state.doc_nombre}.pdf",
-                mime="application/pdf",
-                use_container_width=True
-            )
-            
-        st.markdown("---")
-        st.markdown("#### ☁️ Respaldo en Google Drive y Excel (Google Sheets)")
-        
-        folder_id = st.secrets.get("DRIVE_FOLDER_ID", "PEGA_AQUI_ID_DE_TU_CARPETA_DRIVE")
-        sheet_id = st.secrets.get("SHEETS_EXCEL_ID", "PEGA_AQUI_ID_DE_TU_EXCEL")
-        
-        if st.button("☁️ Subir Word y PDF a Drive y Registrar Fila en Excel", use_container_width=True):
-            exito, mensaje = guardar_en_drive_y_excel(
-                st.session_state.datos_cache,
-                st.session_state.doc_word,
-                st.session_state.doc_pdf,
-                st.session_state.doc_nombre,
-                folder_id,
-                sheet_id
-            )
-            if exito:
-                st.success(mensaje)
-            else:
-                st.warning(mensaje)
+    # Botón de descarga directa del Word y respaldo en Google Drive/Sheets
+    if st.session_state.doc_word:
+        st.download_button(
+            label="📥 Descargar Documento Word (.docx)",
+            data=st.session_state.doc_word,
+            file_name=f"{st.session_state.doc_nombre}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            use_container_width=True
+        )
