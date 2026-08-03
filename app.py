@@ -29,7 +29,7 @@ cargar_plantillas_iniciales()
 # ==========================================
 # 4. ENCABEZADO INSTITUCIONAL
 # ==========================================
-st.title("📐 DELTA Land Aerial Building Surveyors LABS")
+st.title("D E L T A  C O T I Z A D O R")
 st.caption(f"**{COMPANY_INFO['SUBTITLE']}** — *Sistema Profesional de Cotizaciones*")
 st.markdown("---")
 
