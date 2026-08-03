@@ -187,48 +187,50 @@ def render_quote_builder():
 
     st.markdown("---")
 
-    # =========================================================================
-    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS (Vinculados dinámicamente)
+# =========================================================================
+    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS (Contenedor Dinámico)
     # =========================================================================
     st.markdown("### 4. Entregables, Exclusiones y Términos")
     
-    entregables_default = servicio_sel.get("entregables", (
-        "Archivos CAD (DWG / DXF) con planimetría, retícula UTM y curvas de nivel.\n"
-        "Archivo de Coordenadas (CSV compatible con Trimble Coordinate Manager y Excel).\n"
-        "Memoria Técnica Descriptiva y Reporte Fotográfico del proyecto."
-    ))
-    
-    exclusiones_default = servicio_sel.get("exclusiones", (
-        "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\n"
-        "No incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\n"
-        "El cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
-    ))
+    # Usamos un contenedor único por cada servicio para forzar su actualización visual al cambiar de selección
+    with st.container(key=f"contenedor_seccion_4_{servicio_id}"):
+        entregables_default = servicio_sel.get("entregables", (
+            "Archivos CAD (DWG / DXF) con planimetría, retícula UTM y curvas de nivel.\n"
+            "Archivo de Coordenadas (CSV compatible con Trimble Coordinate Manager y Excel).\n"
+            "Memoria Técnica Descriptiva y Reporte Fotográfico del proyecto."
+        ))
+        
+        exclusiones_default = servicio_sel.get("exclusiones", (
+            "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\n"
+            "No incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\n"
+            "El cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
+        ))
 
-    entregables_text = st.text_area(
-        "Entregables (Uno por línea)", 
-        value=entregables_default, 
-        height=95,
-        key="box_entregables_dinamico"
-    )
-    
-    exclusiones_text = st.text_area(
-        "Exclusiones (Uno por línea)", 
-        value=exclusiones_default, 
-        height=95,
-        key="box_exclusiones_dinamico"
-    )
-    
-    clausulas_text = st.text_area("Cláusulas de Trabajo y Forma de Pago", value=(
-        "• Vigencia de la cotización: 15 días hábiles a partir de la fecha de emisión.\n"
-        "• Forma de pago: 50% de anticipo para iniciar trabajos en campo y 50% contra entrega de resultados finales.\n"
-        "• Los precios no incluyen I.V.A."
-    ), height=80, key="box_clausulas_dinamico")
-    
-    saludo_text = st.text_input(
-        "Saludo de Cierre", 
-        value="Agradeciendo de antemano su confianza, quedamos a su entera disposición para cualquier aclaración técnica.",
-        key="box_saludo_dinamico"
-    )
+        entregables_text = st.text_area(
+            "Entregables (Uno por línea)", 
+            value=entregables_default, 
+            height=95,
+            key=f"box_ent_{servicio_id}"
+        )
+        
+        exclusiones_text = st.text_area(
+            "Exclusiones (Uno por línea)", 
+            value=exclusiones_default, 
+            height=95,
+            key=f"box_exc_{servicio_id}"
+        )
+        
+        clausulas_text = st.text_area("Cláusulas de Trabajo y Forma de Pago", value=(
+            "• Vigencia de la cotización: 15 días hábiles a partir de la fecha de emisión.\n"
+            "• Forma de pago: 50% de anticipo para iniciar trabajos en campo y 50% contra entrega de resultados finales.\n"
+            "• Los precios no incluyen I.V.A."
+        ), height=80, key=f"box_clau_{servicio_id}")
+        
+        saludo_text = st.text_input(
+            "Saludo de Cierre", 
+            value="Agradeciendo de antemano su confianza, quedamos a su entera disposición para cualquier aclaración técnica.",
+            key=f"box_saludo_{servicio_id}"
+        )
 
     if "doc_word" not in st.session_state:
         st.session_state.doc_word = None
