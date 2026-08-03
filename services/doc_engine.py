@@ -39,19 +39,23 @@ def _aplicar_estilo_parrafo(p, size_pt=DOC_CONFIG["BODY_SIZE_PT"], bold=False, c
 
 def generar_cotizacion_docx(datos):
     """
-    Genera la cotización cargando tu documento Word (.docx) base con membrete incluido.
+    Genera la cotización cargando tu documento Word (.docx) base y limpiando párrafos vacíos.
     """
     ruta_plantilla = os.path.join(BASE_DIR, "assets", "plantilla_base.docx")
     
-    # --- 1. CARGA DEL MOLDE OFICIAL ---
-    # Usamos la ruta absoluta para que Streamlit Cloud encuentre el archivo siempre
+    # --- 1. CARGA DEL MOLDE OFICIAL Y LIMPIEZA DE PÁRRAFOS FANTASMA ---
     if os.path.exists(ruta_plantilla):
         doc = docx.Document(ruta_plantilla)
+        # ASPIRADORA TÉCNICA: Borra cualquier "Enter" o salto de página guardado en el cuerpo del Word
+        # sin tocar los encabezados ni los pies de página
+        for p in list(doc.paragraphs):
+            p._element.getparent().remove(p._element)
+        for t in list(doc.tables):
+            t._element.getparent().remove(t._element)
     else:
-        # Si no encuentra el archivo en GitHub, lanzamos un error claro para no fallar en silencio
         raise FileNotFoundError(f"No se encontró el archivo base en: {ruta_plantilla}. Verifica que esté subido en la carpeta assets/ de GitHub.")
 
-    # --- 2. FECHA FORMAL MEXICANA ---
+    # --- 2. FECHA FORMAL MEXICANA (AHORA SÍ EN LA LÍNEA 1 DE LA HOJA 1) ---
     p_date = doc.add_paragraph()
     p_date.paragraph_format.space_before = Pt(6)
     p_date.alignment = WD_ALIGN_PARAGRAPH.RIGHT
