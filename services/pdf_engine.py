@@ -24,7 +24,6 @@ def _limpiar_texto(texto):
     texto_str = str(texto)
     for orig, dest in reemplazos.items():
         texto_str = texto_str.replace(orig, dest)
-    # Reemplaza cualquier carácter fuera del estándar Latin-1 por un espacio limpio
     return texto_str.encode("latin-1", "replace").decode("latin-1")
 
 class CotizacionPDF(FPDF):
@@ -44,7 +43,7 @@ class CotizacionPDF(FPDF):
         self.cell(0, 10, f"DELTA LABS - Página {self.page_no()}/{{nb}}", 0, 0, "C")
 
 def generar_cotizacion_pdf(datos):
-    """Genera un archivo PDF ejecutivo de alta ingeniería en bytes puros."""
+    """Genera un archivo PDF ejecutivo de alta ingeniería con márgenes seguros."""
     pdf = CotizacionPDF()
     pdf.alias_nb_pages()
     pdf.add_page()
@@ -85,25 +84,27 @@ def generar_cotizacion_pdf(datos):
     add_section("2. Metodología y Procedimiento Técnico", datos.get("metodologia", ""))
     add_section("3. Instrumentación y Equipo Desplegado", datos.get("equipo", ""))
     
-    # 4. ENTREGABLES
+    # 4. ENTREGABLES (VIÑETA UNIFICADA PARA EVITAR ERROR DE ESPACIO HORIZONTAL)
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(24, 76, 120)
     pdf.cell(0, 7, "4. Entregables del Proyecto", 0, 1, "L")
     pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(40, 40, 40)
     for ent in datos.get("entregables", []):
-        pdf.cell(5, 5, "-", 0, 0)
-        pdf.multi_cell(0, 5, _limpiar_texto(ent))
+        texto_entregable = f"   - {_limpiar_texto(ent)}"
+        pdf.multi_cell(0, 5, texto_entregable)
     pdf.ln(3)
     
-    # 5. PROPUESTA ECONÓMICA (TABLA DINÁMICA)
+    # 5. PROPUESTA ECONÓMICA (TABLA DE 185 mm CON TOLERANCIA DE MÁRGENES)
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(24, 76, 120)
     pdf.cell(0, 7, "5. Propuesta Económica", 0, 1, "L")
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_fill_color(24, 76, 120)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(115, 7, _limpiar_texto("Descripción del Servicio / Concepto"), 1, 0, "C", fill=True)
+    
+    # Total de ancho = 110 + 30 + 45 = 185 mm (seguro contra desbordes)
+    pdf.cell(110, 7, _limpiar_texto("Descripción del Servicio / Concepto"), 1, 0, "C", fill=True)
     pdf.cell(30, 7, "Cant.", 1, 0, "C", fill=True)
     pdf.cell(45, 7, "Importe (MXN)", 1, 1, "C", fill=True)
     
@@ -113,25 +114,25 @@ def generar_cotizacion_pdf(datos):
     for cons in datos.get("conceptos_economicos", []):
         monto = float(cons.get("monto", 0.0))
         total_mxn += monto
-        pdf.cell(115, 6, _limpiar_texto(cons.get("desc", ""))[:60], 1, 0, "L")
+        pdf.cell(110, 6, _limpiar_texto(cons.get("desc", ""))[:58], 1, 0, "L")
         pdf.cell(30, 6, _limpiar_texto(cons.get("cant", "")), 1, 0, "C")
         pdf.cell(45, 6, f"$ {monto:,.2f}", 1, 1, "R")
         
     pdf.set_font("Helvetica", "B", 9)
     pdf.set_text_color(24, 76, 120)
-    pdf.cell(145, 7, "TOTAL (Sin I.V.A.):", 1, 0, "R")
+    pdf.cell(140, 7, "TOTAL (Sin I.V.A.):", 1, 0, "R")
     pdf.cell(45, 7, f"$ {total_mxn:,.2f}", 1, 1, "R")
     pdf.ln(4)
     
-    # 6. PREMISAS Y EXCLUSIONES
+    # 6. PREMISAS Y EXCLUSIONES (VIÑETA UNIFICADA)
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(24, 76, 120)
     pdf.cell(0, 7, "6. Premisas Técnicas y Exclusiones", 0, 1, "L")
     pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(80, 80, 80)
     for excl in datos.get("exclusiones", []):
-        pdf.cell(5, 5, "-", 0, 0)
-        pdf.multi_cell(0, 5, _limpiar_texto(excl))
+        texto_exclusion = f"   - {_limpiar_texto(excl)}"
+        pdf.multi_cell(0, 5, texto_exclusion)
     pdf.ln(3)
     
     # 7. CONDICIONES DE TRABAJO Y SALUDO FINAL
