@@ -97,16 +97,71 @@ def render_quote_builder():
     if guardar_como_nueva:
         nombre_nueva_plantilla = st.text_input("Nombre de tu nueva plantilla", placeholder="Ej. Vuelo Dron - Corredor Vial")
     st.markdown("---")
-    st.markdown("### 3. Propuesta Económica")
+    # =========================================================================
+    # 3. PROPUESTA ECONÓMICA (Cálculo Inteligente + Modificable por el Usuario)
+    # =========================================================================
+    st.subheader("3. Propuesta Económica")
     
-    col_desc, col_cant, col_monto = st.columns([3, 1, 1.5])
+    # 1. Obtenemos los parámetros de cobro de la plantilla seleccionada
+    area_min = float(servicio_sel.get("area_min", 1.0))
+    precio_min = float(servicio_sel.get("precio_min", 1000.0))
+    precio_extra = float(servicio_sel.get("precio_extra", 0.0))
+    unidad_act = servicio_sel.get("unidad", "m2")
+    
+    # 2. Captura de cantidad o área del proyecto
+    col_cant, col_info_calc = st.columns([1, 2])
+    with col_cant:
+        cantidad_area = st.number_input(
+            f"Cantidad / Área [{unidad_act}]:", 
+            min_value=0.0, 
+            value=max(1.0, area_min), 
+            format="%.2f",
+            step=10.0 if unidad_act == "m2" else 1.0
+        )
+        
+    # 3. Lógica de cálculo automático DELTA LABS
+    if cantidad_area <= area_min:
+        estimado_auto = precio_min
+        excedente_qty = 0.0
+        costo_excedente = 0.0
+        detalle_texto = f"Aplica **Tarifa Mínima Base**: **${precio_min:,.2f} MXN** (cubre hasta {area_min:,.2f} {unidad_act})."
+    else:
+        excedente_qty = cantidad_area - area_min
+        costo_excedente = excedente_qty * precio_extra
+        estimado_auto = precio_min + costo_excedente
+        detalle_texto = (
+            f"**Tarifa Mínima Base** (${precio_min:,.2f} MXN por los primeros {area_min:,.2f} {unidad_act}) + "
+            f"**Excedente** ({excedente_qty:,.2f} {unidad_act} × ${precio_extra:,.2f} MXN = ${costo_excedente:,.2f} MXN)."
+        )
+
+    with col_info_calc:
+        st.info(f"💡 **Cálculo Sugerido según Tabla:**\n{detalle_texto}\n\n**Total Sugerido:** `${estimado_auto:,.2f} MXN`")
+
+    st.markdown("---")
+
+    # 4. Ajuste final modificable por el usuario
+    col_desc, col_monto, col_iva = st.columns([2, 1.2, 1])
     with col_desc:
         desc_concepto = st.text_input("Descripción del Cobro", value=f"Servicios de Topografía - {seleccion_nombre}")
-    with col_cant:
-        cant_concepto = st.text_input("Cantidad / Unidad", value=f"1 {servicio_sel.get('unidad', 'Lote')}")
+    
     with col_monto:
-        precio_base = servicio_sel.get('precio_base', 15000.0)
-        monto_concepto = st.number_input("Importe ($ MXN)", value=float(precio_base), step=500.0)
+        # El usuario puede escribir el precio que quiera aquí, por defecto sugerimos el cálculo automático
+        monto_concepto = st.number_input(
+            "Importe Final a Cotizar ($ MXN) *", 
+            value=float(estimado_auto), 
+            min_value=0.0,
+            step=500.0,
+            format="%.2f",
+            help="Puedes modificar o redondear este monto sugerido a tu criterio."
+        )
+        
+    with col_iva:
+        incluye_iva = st.checkbox("Incluir IVA (16%)", value=False)
+        if incluye_iva:
+            total_calc = monto_concepto * 1.16
+            st.metric(label="Total con IVA", value=f"${total_calc:,.2f}")
+        else:
+            st.metric(label="Importe Netto", value=f"${monto_concepto:,.2f}")
 
     st.markdown("---")
     st.markdown("### 4. Entregables, Exclusiones y Términos")
