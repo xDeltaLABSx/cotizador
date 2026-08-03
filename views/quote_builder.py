@@ -245,8 +245,7 @@ def render_quote_builder():
                     precio_base=monto_concepto
                 )
                 st.toast("✅ ¡Nueva plantilla guardada en tu catálogo!")
-
-            # 3. Empaquetar datos incluyendo metadatos
+# 3. Empaquetar datos de forma blindada para el generador Word
             datos_completos = {
                 "ciudad": ciudad,
                 "fecha_dt": datetime.now(),
@@ -257,11 +256,19 @@ def render_quote_builder():
                 "objetivo": objetivo_mod,
                 "metodologia": metodologia_mod,
                 "equipo": equipo_mod,
-                "conceptos_economicos": [{"desc": desc_concepto, "cant": cantidad_area, "monto": monto_concepto}],
-                "entregables": [e.strip() for e in entregables_text.split("\n") if e.strip()],
-                "exclusiones": [x.strip() for x in exclusiones_text.split("\n") if x.strip()],
-                "clausulas": clausulas_text,
-                "saludo_final": saludo_text,
+                # Formato en lista de diccionarios con tipos de datos explícitos
+                "conceptos_economicos": [
+                    {
+                        "desc": str(desc_concepto),
+                        "cant": float(cantidad_area),
+                        "monto": float(monto_concepto),
+                        "unidad": str(unidad_act)
+                    }
+                ],
+                "entregables": [e.strip() for e in str(entregables_text).split("\n") if e.strip()],
+                "exclusiones": [x.strip() for x in str(exclusiones_text).split("\n") if x.strip()],
+                "clausulas": str(clausulas_text),
+                "saludo_final": str(saludo_text),
                 "autor_meta": autor_meta,
                 "titulo_meta": titulo_meta,
                 "etiquetas_meta": etiquetas_meta
