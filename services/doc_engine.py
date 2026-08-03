@@ -115,12 +115,22 @@ def generar_cotizacion_docx(datos):
 
     doc.add_paragraph().paragraph_format.space_after = Pt(3)
 
-    # --- 7. SECCIÓN 5: PROPUESTA ECONÓMICA ---
+  # --- 7. SECCIÓN 5: PROPUESTA ECONÓMICA ---
     h5 = doc.add_heading(level=2)
     h5.add_run("5. Propuesta Económica")
     _aplicar_estilo_parrafo(h5, size_pt=TITLE_SIZE_PT, bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True, space_after=5)
     
-    conceptos = datos.get("conceptos_economicos", [])
+    # BLINDAJE: Aseguramos que 'conceptos' siempre sea una lista iterable de diccionarios
+    raw_conceptos = datos.get("conceptos_economicos", [])
+    if isinstance(raw_conceptos, (int, float)):
+        conceptos = [{"desc": datos.get("nombre_proyecto", "Servicio Topográfico"), "cant": "1 Lote", "monto": float(raw_conceptos)}]
+    elif isinstance(raw_conceptos, dict):
+        conceptos = [raw_conceptos]
+    elif isinstance(raw_conceptos, list):
+        conceptos = raw_conceptos
+    else:
+        conceptos = [{"desc": "Servicio General", "cant": "1 Lote", "monto": 0.0}]
+
     num_filas = len(conceptos) + 2
     tabla = doc.add_table(rows=num_filas, cols=3)
     tabla.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -141,8 +151,8 @@ def generar_cotizacion_docx(datos):
         monto = float(cons.get("monto", 0.0))
         total_mxn += monto
         row_cells = tabla.rows[idx + 1].cells
-        row_cells[0].text = cons.get("desc", "Servicio topográfico")
-        row_cells[1].text = cons.get("cant", "1 Lote")
+        row_cells[0].text = str(cons.get("desc", "Servicio topográfico"))
+        row_cells[1].text = str(cons.get("cant", "1 Lote"))
         row_cells[2].text = f"$ {monto:,.2f}"
         
         row_cells[1].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
