@@ -30,9 +30,17 @@ def render_quote_builder():
     catalogo = obtener_catalogo_completo()
     opciones = {s["nombre"]: s["id"] for s in catalogo["servicios"]}
     
+    if not opciones:
+        st.error("⚠️ No se encontraron plantillas en data/catalogo_seed.json. Verifica que el archivo esté subido en GitHub.")
+        return
+
     seleccion_nombre = st.selectbox("Seleccione Plantilla Base de Trabajo", list(opciones.keys()))
     servicio_id = opciones[seleccion_nombre]
     servicio_sel = obtener_servicio_por_id(servicio_id)
+    
+    if not servicio_sel:
+        st.error("⚠️ Error al cargar la plantilla seleccionada.")
+        return
     
     # Cuadros de texto EDITABLES AL MOMENTO
     objetivo_mod = st.text_area("Objetivo del Proyecto (Editable)", value=servicio_sel["objetivo"], height=80)
@@ -78,47 +86,53 @@ def render_quote_builder():
         st.session_state.doc_nombre = ""
 
     st.markdown("---")
+    
     if st.button("🚀 Generar Cotización Formal (Word)", type="primary", use_container_width=True):
-        # 1. Guardar cliente en la base de datos
-        guardar_o_actualizar_cliente(atencion, cargo, empresa, correo, telefono)
-        
-        # 2. Si marcó guardar como nueva plantilla, la registramos
-        if guardar_como_nueva and nombre_nueva_plantilla:
-            guardar_nueva_plantilla(
-                nombre=nombre_nueva_plantilla,
-                objetivo=objetivo_mod,
-                metodologia=metodologia_mod,
-                equipo=equipo_mod,
-                unidad=servicio_sel.get('unidad_default', 'Lote'),
-                precio_base=monto_concepto
-            )
-            st.toast("✅ ¡Nueva plantilla guardada en tu catálogo!")
+        try:
+            # 1. Guardar cliente en la base de datos
+            guardar_o_actualizar_cliente(atencion, cargo, empresa, correo, telefono)
+            
+            # 2. Si marcó guardar como nueva plantilla, la registramos
+            if guardar_como_nueva and nombre_nueva_plantilla:
+                guardar_nueva_plantilla(
+                    nombre=nombre_nueva_plantilla,
+                    objetivo=objetivo_mod,
+                    metodologia=metodologia_mod,
+                    equipo=equipo_mod,
+                    unidad=servicio_sel.get('unidad_default', 'Lote'),
+                    precio_base=monto_concepto
+                )
+                st.toast("✅ ¡Nueva plantilla guardada en tu catálogo!")
 
-        # 3. Empaquetar datos para el motor editorial
-        datos_docx = {
-            "ciudad": ciudad,
-            "fecha_dt": datetime.now(),
-            "cliente_atencion": atencion,
-            "cliente_cargo": cargo,
-            "cliente_empresa": empresa,
-            "nombre_proyecto": proyecto,
-            "objetivo": objetivo_mod,
-            "metodologia": metodologia_mod,
-            "equipo": equipo_mod,
-            "conceptos_economicos": [{"desc": desc_concepto, "cant": cant_concepto, "monto": monto_concepto}],
-            "entregables": [e.strip() for e in entregables_text.split("\n") if e.strip()],
-            "exclusiones": [x.strip() for x in exclusiones_text.split("\n") if x.strip()],
-            "clausulas": clausulas_text,
-            "saludo_final": saludo_text
-        }
-        
-        # 4. Generar el Word impecable sin saltos rotos
-        st.session_state.doc_generado = generar_cotizacion_docx(datos_docx)
-        empresa_limpia = empresa.replace(" ", "_").replace(".", "")[:20]
-        st.session_state.doc_nombre = f"Cotizacion_{empresa_limpia}.docx"
-        st.success("✅ ¡Documento generado con membrete y sin saltos de página mal hechos!")
+            # 3. Empaquetar datos para el motor editorial
+            datos_docx = {
+                "ciudad": ciudad,
+                "fecha_dt": datetime.now(),
+                "cliente_atencion": atencion,
+                "cliente_cargo": cargo,
+                "cliente_empresa": empresa,
+                "nombre_proyecto": proyecto,
+                "objetivo": objetivo_mod,
+                "metodologia": metodologia_mod,
+                "equipo": equipo_mod,
+                "conceptos_economicos": [{"desc": desc_concepto, "cant": cant_concepto, "monto": monto_concepto}],
+                "entregables": [e.strip() for e in entregables_text.split("\n") if e.strip()],
+                "exclusiones": [x.strip() for x in exclusiones_text.split("\n") if x.strip()],
+                "clausulas": clausulas_text,
+                "saludo_final": saludo_text
+            }
+            
+            # 4. Generar el Word impecable sin saltos rotos
+            st.session_state.doc_generado = generar_cotizacion_docx(datos_docx)
+            empresa_limpia = empresa.replace(" ", "_").replace(".", "")[:20]
+            st.session_state.doc_nombre = f"Cotizacion_{empresa_limpia}.docx"
+            st.success("✅ ¡Documento generado con membrete y sin saltos de página mal hechos!")
+            
+        except Exception as error:
+            st.error(f"⚠️ Ocurrió un detalle técnico al generar el documento: {str(error)}")
+            st.info("Revisa que los archivos de configuración en GitHub estén completos.")
 
-    # Botón de descarga FUERA del flujo para que no falle en Streamlit Cloud
+    # Botón de descarga FUERA del flujo principal para evitar choques en Streamlit Cloud
     if st.session_state.doc_generado:
         st.download_button(
             label="📥 Descargar Documento Word (.docx) Impecable",
