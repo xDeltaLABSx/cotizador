@@ -7,13 +7,19 @@ from views.template_manager import render_template_manager
 from views.client_directory import render_client_directory
 from services.plantillas import cargar_plantillas_iniciales
 
-# 1. Configurar navegador (icono de regla y título profesional)
+# ==========================================
+# 2. CONFIGURACIÓN DE LA PÁGINA
+# ==========================================
 st.set_page_config(
-    page_title=f"Cotizador | {COMPANY_INFO['NAME']}",
-    page_icon="📐",
-    layout="centered"
+    page_title="DELTA LABS - Cotizador",
+    page_icon="🛰️",
+    layout="wide"
 )
-cargar_plantillas_iniciales()
+
+# ==========================================
+# 3. INICIALIZAR LAS PLANTILLAS EN MEMORIA
+# ==========================================
+cargar_plantillas_iniciales()  # <-- ¡AQUÍ ES DONDE DEBE IR!
 # =========================================================================
 # SECCIÓN 2: SELECCIÓN, EDICIÓN Y VERSIONES DEL SERVICIO
 # =========================================================================
