@@ -38,32 +38,64 @@ def render_quote_builder():
             etiquetas_meta = st.text_input("Etiquetas / Keywords", value="32826 - TIJ - RSR Trazo, Topografía, Geodesia")
 
     st.markdown("---")
+  # =========================================================================
+    # 2. SELECCIÓN Y MODIFICACIÓN TÉCNICA DEL SERVICIO
+    # =========================================================================
     st.markdown("### 2. Selección y Modificación Técnica del Servicio")
     
-    # Nos aseguramos de que las plantillas externas estén cargadas sin ensuciar la vista
-    if "plantillas_dinamicas" not in st.session_state or not st.session_state["plantillas_dinamicas"]:
-        cargar_plantillas_iniciales()
+    # 1. Leer el catálogo oficial desde models.template_model (conectado a tu Administrador de Plantillas)
+    catalogo = obtener_catalogo_completo()
+    
+    # --- SINCRONIZACIÓN AUTOMÁTICA CON LAS 21 PLANTILLAS TÉCNICAS ---
+    # Si tu catálogo está vacío o le faltan los servicios nuevos, los sincronizamos en memoria y en tu catálogo
+    from services.plantillas import cargar_plantillas_iniciales
+    plantillas_base = cargar_plantillas_iniciales() # Devuelve el diccionario con los 21 servicios
+    
+    if not catalogo:
+        catalogo = {"servicios": [], "entregables": [], "exclusiones": []}
+    if "servicios" not in catalogo:
+        catalogo["servicios"] = []
         
-    opciones = st.session_state.get("plantillas_dinamicas", {})
+    nombres_existentes = {s["nombre"] for s in catalogo["servicios"]}
+    for nombre, s_data in plantillas_base.items():
+        if nombre not in nombres_existentes:
+            catalogo["servicios"].append({
+                "id": nombre.lower().replace(" - ", "_").replace(" ", "_").replace("(", "").replace(")", "").replace("&", "y"),
+                "nombre": nombre,
+                "objetivo": s_data.get("objetivo", ""),
+                "metodologia": s_data.get("metodología", s_data.get("metodologia", "")),
+                "equipo": s_data.get("equipo", ""),
+                "unidad_default": s_data.get("unidad", "m2"),
+                "precio_unitario_default": s_data.get("precio_base", 10.0)
+            })
+    # -----------------------------------------------------------------
+
+    opciones = {s["nombre"]: s["id"] for s in catalogo["servicios"]}
     
     if not opciones:
-        st.error("⚠️ No se pudieron cargar las plantillas desde services/plantillas.py.")
+        st.error("⚠️ No se encontraron plantillas en tu catálogo ni en services/plantillas.py.")
         return
 
     seleccion_nombre = st.selectbox("Seleccione Plantilla Base de Trabajo", list(opciones.keys()))
-    servicio_sel = opciones[seleccion_nombre]
+    servicio_id = opciones[seleccion_nombre]
     
-    # Cuadros de texto EDITABLES AL MOMENTO (cargados limpios desde tu archivo externo)
+    # Buscamos la ficha seleccionada en el catálogo vinculado
+    servicio_sel = next((s for s in catalogo["servicios"] if s["id"] == servicio_id or s["nombre"] == seleccion_nombre), None)
+    
+    if not servicio_sel:
+        st.error("⚠️ Error al cargar la plantilla seleccionada.")
+        return
+    
+    # Cuadros de texto EDITABLES AL MOMENTO (conectados con tu ficha técnica)
     objetivo_mod = st.text_area("Objetivo del Proyecto (Editable)", value=servicio_sel.get("objetivo", ""), height=80)
-    metodologia_mod = st.text_area("Metodología Técnica (Editable)", value=servicio_sel.get("metodología", ""), height=130)
+    metodologia_mod = st.text_area("Metodología Técnica (Editable)", value=servicio_sel.get("metodologia", ""), height=130)
     equipo_mod = st.text_area("Equipamiento Desplegado (Editable)", value=servicio_sel.get("equipo", ""), height=80)
     
-    # Opción: Guardar modificación como NUEVA plantilla del catálogo
+    # Opción: Guardar modificación como NUEVA plantilla del catálogo (Se vinculará a tu Administrador de Plantillas)
     guardar_como_nueva = st.checkbox("⭐ ¿Guardar esta modificación como NUEVA plantilla para el futuro?")
     nombre_nueva_plantilla = ""
     if guardar_como_nueva:
         nombre_nueva_plantilla = st.text_input("Nombre de tu nueva plantilla", placeholder="Ej. Vuelo Dron - Corredor Vial")
-
     st.markdown("---")
     st.markdown("### 3. Propuesta Económica")
     
