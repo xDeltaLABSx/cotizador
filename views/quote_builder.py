@@ -10,6 +10,9 @@ from config.settings import COMPANY_INFO
 
 
 def render_quote_builder():
+    # =========================================================================
+    # 1. CONFIGURACIÓN DE CLIENTE Y PROYECTO
+    # =========================================================================
     st.markdown("### 1. Configuración de Cliente y Proyecto")
     
     # Búsqueda y autocompletado inteligente de clientes
@@ -38,7 +41,8 @@ def render_quote_builder():
             etiquetas_meta = st.text_input("Etiquetas / Keywords", value="32826 - TIJ - RSR Trazo, Topografía, Geodesia")
 
     st.markdown("---")
-  # =========================================================================
+
+    # =========================================================================
     # 2. SELECCIÓN Y MODIFICACIÓN TÉCNICA DEL SERVICIO
     # =========================================================================
     st.markdown("### 2. Selección y Modificación Técnica del Servicio")
@@ -47,9 +51,7 @@ def render_quote_builder():
     catalogo = obtener_catalogo_completo()
     
     # --- SINCRONIZACIÓN AUTOMÁTICA CON LAS 21 PLANTILLAS TÉCNICAS ---
-    # Si tu catálogo está vacío o le faltan los servicios nuevos, los sincronizamos en memoria y en tu catálogo
-    from services.plantillas import cargar_plantillas_iniciales
-    plantillas_base = cargar_plantillas_iniciales() # Devuelve el diccionario con los 21 servicios
+    plantillas_base = cargar_plantillas_iniciales()
     
     if not catalogo:
         catalogo = {"servicios": [], "entregables": [], "exclusiones": []}
@@ -66,7 +68,10 @@ def render_quote_builder():
                 "metodologia": s_data.get("metodología", s_data.get("metodologia", "")),
                 "equipo": s_data.get("equipo", ""),
                 "unidad_default": s_data.get("unidad", "m2"),
-                "precio_unitario_default": s_data.get("precio_base", 10.0)
+                "precio_unitario_default": s_data.get("precio_base", 10.0),
+                "area_min": s_data.get("area_min", 1.0),
+                "precio_min": s_data.get("precio_min", 10.0),
+                "precio_extra": s_data.get("precio_extra", 0.0)
             })
     # -----------------------------------------------------------------
 
@@ -96,8 +101,10 @@ def render_quote_builder():
     nombre_nueva_plantilla = ""
     if guardar_como_nueva:
         nombre_nueva_plantilla = st.text_input("Nombre de tu nueva plantilla", placeholder="Ej. Vuelo Dron - Corredor Vial")
+    
     st.markdown("---")
-  # =========================================================================
+
+    # =========================================================================
     # 3. PROPUESTA ECONÓMICA (Cálculo Dinámico según m2, ha, jornada, lote o semana)
     # =========================================================================
     st.markdown("### 3. Propuesta Económica")
@@ -106,7 +113,7 @@ def render_quote_builder():
     area_min = float(servicio_sel.get("area_min", 1.0))
     precio_min = float(servicio_sel.get("precio_min", 1000.0))
     precio_extra = float(servicio_sel.get("precio_extra", 0.0))
-    unidad_act = str(servicio_sel.get("unidad_default", s.get("unidad", "m2"))).strip().lower()
+    unidad_act = str(servicio_sel.get("unidad_default", servicio_sel.get("unidad", "m2"))).strip().lower()
     
     # 2. Configuración dinámica del título y comportamiento según la unidad
     config_unidades = {
@@ -137,7 +144,6 @@ def render_quote_builder():
         }
     }
 
-    # Si la unidad no está en el diccionario, usamos una configuración estándar
     cfg = config_unidades.get(unidad_act, {
         "etiqueta": f"Cantidad / Volumen [{unidad_act}]:",
         "paso": 1.0,
@@ -202,31 +208,9 @@ def render_quote_builder():
 
     st.markdown("---")
 
-    # 4. Ajuste final modificable por el usuario
-    col_desc, col_monto, col_iva = st.columns([2, 1.2, 1])
-    with col_desc:
-        desc_concepto = st.text_input("Descripción del Cobro", value=f"Servicios de Topografía - {seleccion_nombre}")
-    
-    with col_monto:
-        # El usuario puede escribir el precio que quiera aquí, por defecto sugerimos el cálculo automático
-        monto_concepto = st.number_input(
-            "Importe Final a Cotizar ($ MXN) *", 
-            value=float(estimado_auto), 
-            min_value=0.0,
-            step=500.0,
-            format="%.2f",
-            help="Puedes modificar o redondear este monto sugerido a tu criterio."
-        )
-        
-    with col_iva:
-        incluye_iva = st.checkbox("Incluir IVA (16%)", value=False)
-        if incluye_iva:
-            total_calc = monto_concepto * 1.16
-            st.metric(label="Total con IVA", value=f"${total_calc:,.2f}")
-        else:
-            st.metric(label="Importe Netto", value=f"${monto_concepto:,.2f}")
-
-    st.markdown("---")
+    # =========================================================================
+    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS
+    # =========================================================================
     st.markdown("### 4. Entregables, Exclusiones y Términos")
     
     entregables_text = st.text_area("Entregables (Uno por línea)", value=(
@@ -257,6 +241,9 @@ def render_quote_builder():
 
     st.markdown("---")
     
+    # =========================================================================
+    # 5. EMISIÓN DE COTIZACIÓN Y RESPALDO
+    # =========================================================================
     if st.button("🚀 Generar Word y Subir a Google Drive en Automático", type="primary", use_container_width=True):
         try:
             # 1. Guardar cliente en la base de datos local
@@ -269,7 +256,7 @@ def render_quote_builder():
                     objetivo=objetivo_mod,
                     metodologia=metodologia_mod,
                     equipo=equipo_mod,
-                    unidad=servicio_sel.get('unidad', 'Lote'),
+                    unidad=servicio_sel.get('unidad_default', 'm2'),
                     precio_base=monto_concepto
                 )
                 st.toast("✅ ¡Nueva plantilla guardada en tu catálogo!")
@@ -285,7 +272,7 @@ def render_quote_builder():
                 "objetivo": objetivo_mod,
                 "metodologia": metodologia_mod,
                 "equipo": equipo_mod,
-                "conceptos_economicos": [{"desc": desc_concepto, "cant": cant_concepto, "monto": monto_concepto}],
+                "conceptos_economicos": [{"desc": desc_concepto, "cant": cantidad_area, "monto": monto_concepto}],
                 "entregables": [e.strip() for e in entregables_text.split("\n") if e.strip()],
                 "exclusiones": [x.strip() for x in exclusiones_text.split("\n") if x.strip()],
                 "clausulas": clausulas_text,
