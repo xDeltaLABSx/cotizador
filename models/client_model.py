@@ -1,49 +1,48 @@
 # models/client_model.py
 import streamlit as st
-import os
 from datetime import datetime
 
-# Nota: Importamos el motor de Google Drive/Sheets que ya utilizas en tu app
 try:
     from services.drive_engine import get_gspread_client
 except ImportError:
     get_gspread_client = None
 
-SHEET_ID_CONFIG = "1UjSc9_tCWfw5dsn4Vu_0R5UTTlrnRNUZHDDiUqoMhv4"  # Tu ID de Google Sheets maestro
+SHEET_ID_CONFIG = "1UjSc9_tCWfw5dsn4Vu_0R5UTTlrnRNUZHDDiUqoMhv4"
 
 def _obtener_hoja_clientes():
-    """Conecta directamente con la primera pestaña activa de tu Google Sheet maestro."""
+    """Conecta con la primera pestaña activa de tu Google Sheet maestro."""
     if not get_gspread_client:
+        st.error("⚠️ No se pudo importar 'get_gspread_client' desde services.drive_engine")
         return None
     try:
         gc = get_gspread_client()
         doc = gc.open_by_key(SHEET_ID_CONFIG)
         
-        # Selecciona siempre la primera pestaña del documento (índice 0)
+        # Seleccionamos siempre la primera hoja (índice 0)
         worksheet = doc.get_worksheet(0)
         
-        # Verificamos si la primera fila está vacía para poner los encabezados automáticamente
-        vals = worksheet.get_all_values()
-        if not vals or len(vals[0]) == 0:
+        # Validamos si la hoja está completamente vacía para poner los encabezados
+        try:
+            vals = worksheet.get_all_values()
+            if not vals or len(vals) == 0:
+                worksheet.append_row(["Contacto", "Cargo", "Empresa", "Correo", "Teléfono", "Último Registro"])
+        except Exception:
             worksheet.append_row(["Contacto", "Cargo", "Empresa", "Correo", "Teléfono", "Último Registro"])
             
         return worksheet
     except Exception as e:
-        print(f"Error conectando a la hoja en Google Sheets: {e}")
+        st.error(f"⚠️ Error de permisos o conexión con Google Sheets: {e}")
         return None
 
 def init_client_db():
-    """Función de compatibilidad para inicializar la estructura si es necesario."""
     pass
 
 def guardar_o_actualizar_cliente(nombre_atencion, cargo, empresa, correo="", telefono=""):
-    """
-    Guarda un nuevo cliente o actualiza su última fecha de interacción directamente en Google Sheets.
-    """
+    """Guarda o actualiza un cliente directamente en Google Sheets."""
     try:
         worksheet = _obtener_hoja_clientes()
         if not worksheet:
-            return None
+            return False
 
         registros = worksheet.get_all_records()
         fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -51,8 +50,7 @@ def guardar_o_actualizar_cliente(nombre_atencion, cargo, empresa, correo="", tel
         encontrado = False
         fila_indice = None
         
-        # Buscamos si ya existe la combinación empresa + contacto en el Excel
-        for idx, row in enumerate(registros, start=2): # start=2 porque la fila 1 son headers
+        for idx, row in enumerate(registros, start=2):
             row_empresa = str(row.get("Empresa", "")).strip().lower()
             row_contacto = str(row.get("Contacto", "")).strip().lower()
             
@@ -62,13 +60,11 @@ def guardar_o_actualizar_cliente(nombre_atencion, cargo, empresa, correo="", tel
                 break
         
         if encontrado and fila_indice:
-            # Actualizamos los datos existentes en la fila correspondiente
-            worksheet.update_cell(fila_indice, 2, cargo)       # Columna Cargo
-            worksheet.update_cell(fila_indice, 4, correo)      # Columna Correo
-            worksheet.update_cell(fila_indice, 5, telefono)    # Columna Teléfono
-            worksheet.update_cell(fila_indice, 6, fecha_actual) # Columna Último Registro
+            worksheet.update_cell(fila_indice, 2, cargo)
+            worksheet.update_cell(fila_indice, 4, correo)
+            worksheet.update_cell(fila_indice, 5, telefono)
+            worksheet.update_cell(fila_indice, 6, fecha_actual)
         else:
-            # Agregamos un nuevo registro al final de la hoja de Google Sheets
             worksheet.append_row([
                 str(nombre_atencion),
                 str(cargo),
@@ -77,16 +73,13 @@ def guardar_o_actualizar_cliente(nombre_atencion, cargo, empresa, correo="", tel
                 str(telefono),
                 fecha_actual
             ])
-            
         return True
     except Exception as e:
-        print(f"Error al guardar cliente en Google Sheets: {e}")
+        print(f"Error al guardar cliente: {e}")
         return False
 
 def buscar_clientes(termino=""):
-    """
-    Búsqueda inteligente directamente en tu Google Sheet maestro en la nube.
-    """
+    """Busca clientes en Google Sheets y muestra avisos si hay problemas."""
     try:
         worksheet = _obtener_hoja_clientes()
         if not worksheet:
@@ -102,16 +95,11 @@ def buscar_clientes(termino=""):
             empresa = str(row.get("Empresa", ""))
             correo = str(row.get("Correo", ""))
             telefono = str(row.get("Teléfono", ""))
-            ultimo_reg = str(row.get("Último Registro", ""))
             
-            # Filtramos si coincide con la empresa o el nombre de atención
-            if termino_lower in empresa.lower() or termino_lower in contacto.lower():
-                # Formato esperado por la app: (nombre_atencion, cargo_departamento, empresa, correo, telefono)
+            if not termino_lower or termino_lower in empresa.lower() or termino_lower in contacto.lower():
                 resultados.append((contacto, cargo, empresa, correo, telefono))
                 
-        # Ordenamos de manera simulada por fecha más reciente y limitamos a 10
-        resultados = resultados[:10]
-        return resultados
+        return resultados[:10]
     except Exception as e:
-        print(f"Error buscando clientes en Google Sheets: {e}")
+        print(f"Error buscando clientes: {e}")
         return []
