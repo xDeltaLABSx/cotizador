@@ -10,7 +10,9 @@
       "precio_unitario_default": 4500.0,
       "area_min": 2500.0,
       "precio_min": 4500.0,
-      "precio_extra": 2.0
+      "precio_extra": 2.0,
+      "entregables": "Archivos CAD (DWG / DXF) con planimetría, retícula UTM y cuadro de construcción.\nArchivo de Coordenadas (CSV compatible con Trimble Coordinate Manager y Excel).\nMemoria Técnica Descriptiva y Reporte Fotográfico del predio.",
+      "exclusiones": "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\nNo incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\nEl cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
     },
     {
       "id": "topo_plan_medio",
@@ -22,7 +24,9 @@
       "precio_unitario_default": 6000.0,
       "area_min": 2500.0,
       "precio_min": 6000.0,
-      "precio_extra": 4.0
+      "precio_extra": 4.0,
+      "entregables": "Archivos CAD (DWG / DXF) con planimetría compensada, retícula UTM y cuadro de construcción.\nArchivo de Coordenadas de los vértices (CSV compatible con Trimble Coordinate Manager y Excel).\nMemoria Técnica Descriptiva y Reporte Fotográfico de los puntos de control.",
+      "exclusiones": "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\nNo incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\nEl cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
     },
     {
       "id": "topo_plan_alto",
@@ -34,7 +38,9 @@
       "precio_unitario_default": 7500.0,
       "area_min": 2500.0,
       "precio_min": 7500.0,
-      "precio_extra": 5.0
+      "precio_extra": 5.0,
+      "entregables": "Archivos CAD (DWG / DXF) a detalle con planimetría, retícula UTM y cuadro de construcción.\nArchivo de Coordenadas de detalle y poligonales (CSV compatible con Trimble Coordinate Manager y Excel).\nMemoria Técnica de compensación geométrica y Reporte Fotográfico.",
+      "exclusiones": "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\nNo incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\nEl cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
     },
     {
       "id": "topo_pa",
@@ -46,7 +52,9 @@
       "precio_unitario_default": 6000.0,
       "area_min": 2500.0,
       "precio_min": 6000.0,
-      "precio_extra": 2.5
+      "precio_extra": 2.5,
+      "entregables": "Archivos CAD (DWG / DXF) con planimetría, altimetría, retícula UTM y curvas de nivel a equidistancia convenida.\nArchivo de Coordenadas planialtimétricas (CSV compatible con Trimble Coordinate Manager y Excel).\nModelo Digital de Elevación (MDE) en formato CAD/Ráster y Memoria Descriptiva.",
+      "exclusiones": "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\nNo incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\nEl cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
     },
     {
       "id": "topo_pag",
@@ -58,7 +66,9 @@
       "precio_unitario_default": 8000.0,
       "area_min": 2500.0,
       "precio_min": 8000.0,
-      "precio_extra": 2.5
+      "precio_extra": 2.5,
+      "entregables": "Plano Ejecutivo CAD (DWG / DXF) georeferenciado con planimetría, altimetría y curvas de nivel.\nArchivo de Coordenadas ITRF/UTM (CSV compatible con Trimble Coordinate Manager y Excel).\nMemoria Geodésica de post-proceso con ligue al marco de referencia oficial (INEGI/ITRF) y monografías de vértices.",
+      "exclusiones": "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\nNo incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\nEl cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
     },
     {
       "id": "topo_pa_ha",
@@ -70,7 +80,9 @@
       "precio_unitario_default": 7000.0,
       "area_min": 1.0,
       "precio_min": 7000.0,
-      "precio_extra": 2500.0
+      "precio_extra": 2500.0,
+      "entregables": "Archivos CAD (DWG / DXF) general y por cuadro con curvas de nivel y detalles topográficos.\nArchivo de Coordenadas masivo (CSV compatible con Trimble Coordinate Manager y Excel).\nMemoria Técnica Descriptiva del predio general y Reporte Fotográfico.",
+      "exclusiones": "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\nNo incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\nEl cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
     },
     {
       "id": "topo_pag_ha",
@@ -82,7 +94,9 @@
       "precio_unitario_default": 10000.0,
       "area_min": 1.0,
       "precio_min": 10000.0,
-      "precio_extra": 2500.0
+      "precio_extra": 2500.0,
+      "entregables": "Planos CAD (DWG / DXF) georeferenciados con modelo altimétrico e información catastral del polígono.\nArchivo de Coordenadas de linderos y superficie (CSV compatible con Trimble Coordinate Manager y Excel).\nMemoria Geodésica oficial con certificación de enlace al marco ITRF/INEGI y monografías de control.",
+      "exclusiones": "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\nNo incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\nEl cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
     },
     {
       "id": "arq_estructural",
@@ -94,7 +108,9 @@
       "precio_unitario_default": 7000.0,
       "area_min": 500.0,
       "precio_min": 7000.0,
-      "precio_extra": 15.0
+      "precio_extra": 15.0,
+      "entregables": "Planos Estructurales de estado actual en formato CAD (DWG / DXF) con ejes, columnas, muros y trabes.\nCortes arquitectónicos y estructurales indicando niveles libres y alturas.\nMemoria Técnica dimensional indicando desplomes observados y Reporte Fotográfico.",
+      "exclusiones": "No incluye calas, peritajes de resistencia de concreto ni estudios de mecánica de suelos.\nNo incluye desmontaje de plafones, acabados o paneles para descubrir estructuras ocultas.\nEl cliente garantizará iluminación suficiente y acceso libre a los elementos estructurales a medir."
     },
     {
       "id": "arq_e_instalaciones",
@@ -106,7 +122,9 @@
       "precio_unitario_default": 6500.0,
       "area_min": 500.0,
       "precio_min": 6500.0,
-      "precio_extra": 18.0
+      "precio_extra": 18.0,
+      "entregables": "Planos Arquitectónicos y de Instalaciones en CAD (DWG / DXF) diferenciados por ingenierías.\nMapeo de registros, tableros, bajadas pluviales/sanitarias y trayectorias de HVAC visibles.\nReporte Fotográfico y Memoria Descriptiva del estado aparente de las instalaciones.",
+      "exclusiones": "No incluye rastreo de tuberías ocultas sin registro visible ni pruebas de presión/estanqueidad.\nNo incluye desmontaje de acabados ni intervención de equipos electromecánicos energizados.\nEl cliente facilitará el acceso a cuartos de máquinas, azoteas y ductos principales."
     },
     {
       "id": "arq_nave_industrial",
@@ -118,7 +136,9 @@
       "precio_unitario_default": 8000.0,
       "area_min": 500.0,
       "precio_min": 8000.0,
-      "precio_extra": 12.0
+      "precio_extra": 12.0,
+      "entregables": "Planos Arquitectónicos y de distribución estructural de la nave industrial en CAD (DWG / DXF).\nPlanta altimétrica con nivelación milimétrica de firme de concreto y perfiles longitudinales/transversales.\nReporte Técnico de gálibos libres y estado dimensional de crujías.",
+      "exclusiones": "No incluye interrupción de operaciones de la línea de producción (se trabajará bajo coordinación).\nNo incluye inspección de soldaduras ni ensayos no destructivos en estructura metálica.\nEl cliente proporcionará permisos de acceso y el equipo de protección personal específico si el sitio lo requiere."
     },
     {
       "id": "arq_local_comercial",
@@ -130,7 +150,9 @@
       "precio_unitario_default": 7000.0,
       "area_min": 500.0,
       "precio_min": 7000.0,
-      "precio_extra": 10.0
+      "precio_extra": 10.0,
+      "entregables": "Planos Arquitectónicos de estado actual (Planta de conjunto, fachadas y cortes) en CAD (DWG / DXF).\nDetalle de acometidas de servicios públicos/plazas (agua, luz, drenaje, voz y datos).\nMemoria de superficies útiles y comerciales con Reporte Fotográfico.",
+      "exclusiones": "No incluye gestiones ni pagos administrativos ante la gerencia de plazas comerciales para ingreso de equipo.\nNo abarca el desmontaje de mobiliario comercial, estanterías o muros falsos de exhibición.\nEl cliente coordinará los horarios de ingreso para no afectar la operación del centro comercial."
     },
     {
       "id": "gnss_linea_base_local",
@@ -142,7 +164,9 @@
       "precio_unitario_default": 3500.0,
       "area_min": 1.0,
       "precio_min": 3500.0,
-      "precio_extra": 1000.0
+      "precio_extra": 1000.0,
+      "entregables": "Archivo de Coordenadas geodésicas y proyectadas de las líneas base (CSV compatible con Trimble Coordinate Manager y Excel).\nMemoria Geodésica de cálculo vectorial, análisis de vectores y reporte de cierre de red.\nMonografías descriptivas oficiales de cada vértice con ubicación, croquis y fotografías.",
+      "exclusiones": "No incluye la construcción civil de mojoneras profundas de concreto (se cotiza de forma adicional por unidad).\nNo abarca trabajos de levantamiento topográfico de detalle (únicamente establecimiento de la red de control).\nEl cliente garantizará permisos de acceso y resguardo de la instrumentación durante las observaciones satelitales."
     },
     {
       "id": "gnss_linea_base_foraneo",
@@ -154,7 +178,9 @@
       "precio_unitario_default": 4000.0,
       "area_min": 1.0,
       "precio_min": 4000.0,
-      "precio_extra": 1500.0
+      "precio_extra": 1500.0,
+      "entregables": "Archivo de Coordenadas de alta precisión ITRF/UTM (CSV compatible con Trimble Coordinate Manager y Excel).\nMemoria de Post-proceso Geodésico con efemérides precisas y ligue a estaciones CORS/RGNA del INEGI.\nMonografías técnicas georeferenciadas de los vértices geodésicos establecidos.",
+      "exclusiones": "No incluye la construcción civil de mojoneras geodésicas monumentadas de concreto (salvo acuerdo contractual previo).\nNo abarca permisos especiales de tránsito por terrenos comunitarios, ejidales o zonas de acceso restringido.\nEl cliente garantizará condiciones operativas de seguridad para la brigada técnica en el territorio foráneo."
     },
     {
       "id": "visita_local",
@@ -166,7 +192,9 @@
       "precio_unitario_default": 4500.0,
       "area_min": 1.0,
       "precio_min": 4500.0,
-      "precio_extra": 4500.0
+      "precio_extra": 4500.0,
+      "entregables": "Reporte Técnico de Reconocimiento y Evaluación del sitio en formato PDF.\nArchivo de Coordenadas expeditas de linderos o puntos de interés (CSV compatible con Trimble Coordinate Manager y Excel).\nMemoria Fotográfica georeferenciada de campo.",
+      "exclusiones": "No incluye la emisión de planos topográficos de detalle con valor ejecutivo o legal.\nNo abarca trazos, nivelaciones ni replanteos en obra durante el periodo de inspección.\nEl cliente proveerá el acceso libre y acompañamiento en sitio si el predio requiere autorización."
     },
     {
       "id": "visita_foranea",
@@ -178,7 +206,9 @@
       "precio_unitario_default": 6000.0,
       "area_min": 1.0,
       "precio_min": 6000.0,
-      "precio_extra": 6000.0
+      "precio_extra": 6000.0,
+      "entregables": "Reporte Ejecutivo de Visita e Inspección Técnica Foránea con factibilidad operativa y logística.\nArchivo de Coordenadas preliminares de campo (CSV compatible con Trimble Coordinate Manager y Excel).\nAnexo fotográfico georeferenciado y bitácora de reconocimiento de rutas de acceso.",
+      "exclusiones": "No incluye trabajos ejecutivos de topografía de detalle ni trazos constructivos en sitio.\nNo incluye gestiones ante autoridades municipales o ejidales para el ingreso a la propiedad.\nEl cliente facilitará los permisos de acceso y el enlace de contacto en el sitio del proyecto."
     },
     {
       "id": "cuadrilla_local",
@@ -190,7 +220,9 @@
       "precio_unitario_default": 15000.0,
       "area_min": 1.0,
       "precio_min": 15000.0,
-      "precio_extra": 0.0
+      "precio_extra": 0.0,
+      "entregables": "Bitácora diaria de campo con registro de trazos, nivelaciones, desniveles y referencias ejecutadas.\nArchivo de Coordenadas de replanteo y control diario (CSV compatible con Trimble Coordinate Manager y Excel).\nReporte semanal de avance técnico firmado por la residencia o superintendencia del cliente.",
+      "exclusiones": "No incluye firma como Director Responsable de Obra (DRO) ni corresponsabilidad estructural técnica.\nNo incluye suministro de monumentos definitivos de concreto, mojoneras ni varillas (únicamente estacas de trazo y madera).\nEl cliente será responsable de proporcionar condiciones de seguridad laboral e industrial en su frente de obra."
     },
     {
       "id": "cuadrilla_foranea",
@@ -202,7 +234,9 @@
       "precio_unitario_default": 19000.0,
       "area_min": 1.0,
       "precio_min": 19000.0,
-      "precio_extra": 0.0
+      "precio_extra": 0.0,
+      "entregables": "Bitácora de campo diaria con registro y esquemas de trazos, secciones y niveles ejecutados en obra.\nArchivo de Coordenadas de replanteo y control geodésico (CSV compatible con Trimble Coordinate Manager y Excel).\nReporte semanal de avance y productividad de brigada firmado por el residente del proyecto.",
+      "exclusiones": "No incluye gastos excepcionales de casetas de cuota o peajes en rutas extraordinarias (fuera del trayecto base acordado).\nNo incluye el suministro de mojoneras geodésicas ni concreto estructural para monumentación fija.\nEl cliente garantizará la seguridad física y de tránsito para el personal de DELTA LABS en la zona de trabajo."
     },
     {
       "id": "fotogrametria_jornada",
@@ -214,7 +248,9 @@
       "precio_unitario_default": 9000.0,
       "area_min": 1.0,
       "precio_min": 9000.0,
-      "precio_extra": 9000.0
+      "precio_extra": 9000.0,
+      "entregables": "Paquete de imágenes aéreas originales en alta resolución libres de distorsión óptica.\nArchivo de Coordenadas de los Puntos de Control Terrestre - GCPs (CSV compatible con Trimble Coordinate Manager y Excel).\nReporte técnico de vuelo fotogramétrico indicando parámetros aerotransportados y cobertura operativa.",
+      "exclusiones": "No incluye procesamiento especializado en gabinete para ortomosaicos o modelos 3D (se cotiza por hectárea por separado).\nNo abarca tramitología de permisos excepcionales de vuelo ante AFAC/SENEAM en zonas restringidas aéreas.\nEl cliente es responsable de garantizar el acceso físico a los predios para la colocación de los objetivos o lonas de apoyo (GCP)."
     },
     {
       "id": "fotogrametria_ha",
@@ -226,7 +262,9 @@
       "precio_unitario_default": 6000.0,
       "area_min": 3.0,
       "precio_min": 6000.0,
-      "precio_extra": 750.0
+      "precio_extra": 750.0,
+      "entregables": "Ortomosaico georeferenciado de alta resolución espacial en formato ráster (GeoTIFF / ECW).\nModelo Digital de Elevación (MDE) y Curvas de Nivel generadas en formato CAD (DWG / DXF).\nNube de Puntos Fotogramétrica densa en formato estándar (.LAS / .LAZ) y Reporte Técnico de Calidad.",
+      "exclusiones": "No abarca el levantamiento topográfico tradicional bajo vegetación extremadamente densa (para penetración de follaje se requiere tecnología LiDAR).\nNo incluye trámites gubernamentales o aeronáuticos en caso de restricción del espacio aéreo local.\nEl cliente garantizará las condiciones climáticas operativas y el libre acceso al predio de estudio."
     },
     {
       "id": "vuelo_lidar_jornada",
@@ -238,7 +276,9 @@
       "precio_unitario_default": 18000.0,
       "area_min": 1.0,
       "precio_min": 18000.0,
-      "precio_extra": 18000.0
+      "precio_extra": 18000.0,
+      "entregables": "Archivo original de nube de puntos LiDAR aerotransportada (.LAS / .LAZ) con sincronización inercial (IMU/GNSS).\nArchivo de Coordenadas de la estación base geodésica de referencia (CSV compatible con Trimble Coordinate Manager y Excel).\nReporte Técnico Operativo de jornada de captura LiDAR indicando densidad media por m2.",
+      "exclusiones": "No incluye la clasificación de terreno ni depuración en gabinete de la nube de puntos (se cotiza por hectárea como servicio de procesamiento).\nNo abarca vuelos en condiciones meteorológicas adversas que pongan en peligro la aeronavegabilidad del equipo.\nEl cliente proporcionará los permisos de despegue y resguardo dentro de su predio o frente de obra."
     },
     {
       "id": "vuelo_lidar_ha",
@@ -250,7 +290,9 @@
       "precio_unitario_default": 20000.0,
       "area_min": 50.0,
       "precio_min": 20000.0,
-      "precio_extra": 600.0
+      "precio_extra": 600.0,
+      "entregables": "Nube de Puntos LiDAR clasificada (.LAS / .LAZ) con extracción técnica de terreno desnudo (Bare Earth).\nModelo Digital de Terreno (MDT) de alta precisión y Curvas de Nivel en formato vectorial CAD (DWG / DXF).\nArchivo de Coordenadas de control terrestre altimétrico (CSV compatible con Trimble Coordinate Manager y Excel).\nMemoria Técnica de calibración de sistema y precisión en Z (altimetría).",
+      "exclusiones": "No incluye tala, poda ni remoción física de vegetación en campo (la penetración y filtrado se realiza digitalmente).\nNo abarca la batimetría ni levantamiento subacuático en ríos, presas o cuerpos de agua profundos.\nEl cliente garantizará el acceso a los puntos terrestres para las comprobaciones de control geodésico."
     }
   ],
   "entregables": [
