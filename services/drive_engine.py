@@ -9,8 +9,17 @@ from googleapiclient.http import MediaIoBaseUpload
 def obtener_servicio_drive():
     try:
         if "gcp_service_account" in st.secrets:
+            # Creamos un dict limpio a partir de los secretos de Streamlit
             secretos = dict(st.secrets["gcp_service_account"])
             
+            # Aseguramos que la llave privada tenga los saltos de línea correctos de PEM
+            if "private_key" in secretos:
+                pk = secretos["private_key"].strip()
+                # Si viene en una sola línea con \n textuales, los convertimos a saltos reales
+                if "\\n" in pk and "\n" not in pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", ""):
+                    pk = pk.replace("\\n", "\n")
+                secretos["private_key"] = pk
+
             creds = service_account.Credentials.from_service_account_info(
                 secretos, 
                 scopes=["https://www.googleapis.com/auth/drive"]
