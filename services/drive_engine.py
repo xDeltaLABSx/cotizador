@@ -8,15 +8,21 @@ from googleapiclient.http import MediaIoBaseUpload
 
 def obtener_servicio_drive():
     try:
-        if "gcp_service_account" in st.secrets:
-            secretos = dict(st.secrets["gcp_service_account"])
-            
-            # Unir las líneas de la llave privada de forma nativa si vienen en lista
-            if "private_key_lines" in secretos:
-                secretos["private_key"] = "\n".join(secretos["private_key_lines"])
-                del secretos["private_key_lines"]
-            elif "private_key" in secretos:
-                secretos["private_key"] = str(secretos["private_key"]).strip().replace("\\n", "\n")
+        if "project_id" in st.secrets and "private_key" in st.secrets:
+            # Armamos el diccionario de credenciales de forma plana y segura
+            secretos = {
+                "type": "service_account",
+                "project_id": st.secrets["project_id"],
+                "private_key_id": st.secrets.get("private_key_id", "3125ad883efba098b2131112153b3fddd311df47"),
+                "private_key": str(st.secrets["private_key"]).replace("\\n", "\n"),
+                "client_email": st.secrets["client_email"],
+                "client_id": "114549220877666542984",
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/bot-delta%40delta-labs-auth.iam.gserviceaccount.com",
+                "universe_domain": "googleapis.com"
+            }
 
             creds = service_account.Credentials.from_service_account_info(
                 secretos, 
