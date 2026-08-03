@@ -30,22 +30,6 @@ def _aplicar_estilo_parrafo(p, size_pt=DOC_CONFIG["BODY_SIZE_PT"], bold=False, c
 def generar_cotizacion_docx(datos):
     """
     Genera el documento oficial en Word (.docx) aplicando las reglas editoriales institucionales.
-    
-    Parámetros esperados en 'datos':
-      - ciudad: str
-      - fecha_dt: datetime o None
-      - cliente_atencion: str
-      - cliente_cargo: str
-      - cliente_empresa: str
-      - nombre_proyecto: str
-      - objetivo: str
-      - metodologia: str
-      - equipo: str
-      - conceptos_economicos: list de dicts [{"desc": "...", "cant": "...", "monto": 00.00}]
-      - entregables: list de str
-      - exclusiones: list de str
-      - clausulas: str
-      - saludo_final: str
     """
     doc = docx.Document()
     
@@ -86,7 +70,7 @@ def generar_cotizacion_docx(datos):
     p_date.add_run(fecha_texto)
     _aplicar_estilo_parrafo(p_date, bold=True)
     
-    # --- 3. BLOQUE DE DESTINATARIO (SIN "A QUIEN CORRESPONDA") ---
+    # --- 3. BLOQUE DE DESTINATARIO ---
     p_client = doc.add_paragraph()
     p_client.paragraph_format.space_after = Pt(12)
     p_client.add_run(f"At'n: {datos.get('cliente_atencion', 'Ingeniero Responsable')}\n")
@@ -131,7 +115,7 @@ def generar_cotizacion_docx(datos):
         p_ent.paragraph_format.left_indent = Inches(0.25)
         _aplicar_estilo_parrafo(p_ent)
 
-    # --- 8. SECCIÓN 5: PROPUESTA ECONÓMICA (TABLA DINÁMICA) ---
+    # --- 8. SECCIÓN 5: PROPUESTA ECONÓMICA ---
     h5 = doc.add_heading(level=2)
     h5.add_run("5. Propuesta Económica")
     _aplicar_estilo_parrafo(h5, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
@@ -203,7 +187,7 @@ def generar_cotizacion_docx(datos):
     p_sal = doc.add_paragraph(datos.get("saludo_final", "Agradeciendo de antemano su confianza, quedamos a su entera disposición para cualquier aclaración técnica o modificación que requiera el proyecto."))
     _aplicar_estilo_parrafo(p_sal, keep_next=True)
     
-    # --- 11. BLOQUE DE FIRMA Y DATOS BANCARIOS (BLINDADO CONTRA HUÉRFANAS) ---
+    # --- 11. BLOQUE DE FIRMA Y DATOS BANCARIOS ---
     p_sign = doc.add_paragraph()
     p_sign.paragraph_format.keep_with_next = True
     p_sign.paragraph_format.space_before = Pt(24)
@@ -222,7 +206,8 @@ def generar_cotizacion_docx(datos):
     run_bank.font.size = Pt(8.5)
     run_bank.font.color.rgb = _hex_a_rgb(COLORS["SECONDARY_HEX"])
     
-buffer = io.BytesIO()
+    # Salida en bytes puros para evitar bloqueos en Streamlit Cloud
+    buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     return buffer.getvalue()
