@@ -208,12 +208,20 @@ def render_quote_builder():
 
     st.markdown("---")
 
-   # =========================================================================
-    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS (Conectados al Servicio Activo)
+# =========================================================================
+    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS (Con actualización automática por servicio)
     # =========================================================================
     st.markdown("### 4. Entregables, Exclusiones y Términos")
     
-    # 1. Obtenemos entregables específicos de la especialidad (Topografía, LiDAR, Cuadrilla, etc.)
+    # 1. Detectamos si el usuario cambió de servicio en el selectbox superior
+    if "ultimo_servicio_seleccionado" not in st.session_state or st.session_state["ultimo_servicio_seleccionado"] != servicio_id:
+        st.session_state["ultimo_servicio_seleccionado"] = servicio_id
+        # Limpiamos las memorias temporales para forzar la carga de los nuevos textos del servicio
+        for k in ["cache_entregables", "cache_exclusiones"]:
+            if k in st.session_state:
+                del st.session_state[k]
+
+    # 2. Obtenemos los textos oficiales definidos en el servicio activo
     entregables_default = servicio_sel.get("entregables", (
         "Archivos CAD (DWG / DXF) con planimetría, retícula UTM y curvas de nivel.\n"
         "Archivo de Coordenadas (CSV compatible con Trimble Coordinate Manager y Excel).\n"
@@ -226,31 +234,37 @@ def render_quote_builder():
         "El cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
     ))
 
-    # 2. Mostramos cajas editables vinculadas al servicio (usamos key dinámica por servicio)
+    # 3. Inicializamos los valores en session_state si no existen para este servicio
+    if "cache_entregables" not in st.session_state:
+        st.session_state["cache_entregables"] = entregables_default
+    if "cache_exclusiones" not in st.session_state:
+        st.session_state["cache_exclusiones"] = exclusiones_default
+
+    # 4. Cajas de texto conectadas al estado para que cambien al instante
     entregables_text = st.text_area(
         "Entregables (Uno por línea)", 
-        value=entregables_default, 
+        value=st.session_state["cache_entregables"], 
         height=95,
-        key=f"ent_box_{servicio_id}"
+        key="box_entregables_dinamico"
     )
     
     exclusiones_text = st.text_area(
         "Exclusiones (Uno por línea)", 
-        value=exclusiones_default, 
+        value=st.session_state["cache_exclusiones"], 
         height=95,
-        key=f"exc_box_{servicio_id}"
+        key="box_exclusiones_dinamico"
     )
     
     clausulas_text = st.text_area("Cláusulas de Trabajo y Forma de Pago", value=(
         "• Vigencia de la cotización: 15 días hábiles a partir de la fecha de emisión.\n"
         "• Forma de pago: 50% de anticipo para iniciar trabajos en campo y 50% contra entrega de resultados finales.\n"
         "• Los precios no incluyen I.V.A."
-    ), height=80, key=f"clau_box_{servicio_id}")
+    ), height=80, key="box_clausulas_dinamico")
     
     saludo_text = st.text_input(
         "Saludo de Cierre", 
         value="Agradeciendo de antemano su confianza, quedamos a su entera disposición para cualquier aclaración técnica.",
-        key=f"saludo_box_{servicio_id}"
+        key="box_saludo_dinamico"
     )
 
     # --- MEMORIA DE SESIÓN PARA EL ARCHIVO WORD ---
