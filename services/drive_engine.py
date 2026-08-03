@@ -7,10 +7,11 @@ import streamlit as st
 
 def guardar_en_drive_y_excel(datos, doc_bytes, pdf_bytes, nombre_archivo, folder_id, sheet_id=None):
     try:
+        # Asegurarnos de leer la variable correcta de los secretos
         if "APPS_SCRIPT_URL" not in st.secrets:
-            return False, "⚠️ Falta configurar la URL del Webhook en los secretos."
+            return False, "⚠️ Falta configurar la variable APPS_SCRIPT_URL en los secretos de Streamlit."
             
-        url_script = st.secrets["https://script.google.com/macros/s/AKfycbx-iCa-o1hBSFWhZbVNLRw2O9atGDSuyPt0bU6UanWBj7Ie8q--hFHK8fwf-1WxUUXkmw/exec"]
+        url_script = st.secrets["APPS_SCRIPT_URL"]
         
         # Convertir el archivo Word a Base64
         b64_file = base64.b64encode(doc_bytes).decode("utf-8")
@@ -24,7 +25,7 @@ def guardar_en_drive_y_excel(datos, doc_bytes, pdf_bytes, nombre_archivo, folder
         # Enviar petición POST al Webhook
         response = requests.post(url_script, json=payload, timeout=30)
         
-        # Verificar si Google devolvió HTML (error de permisos o ejecución) en lugar de JSON
+        # Verificar si Google devolvió HTML en lugar de JSON
         if "application/json" not in response.headers.get("Content-Type", ""):
             return False, f"⚠️ Error de Google Apps Script (HTML devuelto): {response.text[:200]}"
             
