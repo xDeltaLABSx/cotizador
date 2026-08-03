@@ -1,21 +1,19 @@
 # views/client_directory.py
 import streamlit as st
-import sqlite3
-import pandas as pd
-from models.client_model import DB_PATH
+from models.client_model import buscar_clientes  # <-- Importamos solo la función de búsqueda
 
 def render_client_directory():
-    st.markdown("### 📂 Cartera de Clientes Registrados")
-    st.write("El sistema guarda automáticamente las constructoras y contactos con los que cotizas para autocompletarlos después.")
+    st.subheader("📂 Cartera de Clientes Registrados")
+    st.caption("El sistema muestra los contactos y constructoras guardados automáticamente en tu Google Sheet en la nube.")
     
-    try:
-        conn = sqlite3.connect(DB_PATH)
-        df = pd.read_sql_query("SELECT nombre_atencion AS Contacto, cargo_departamento AS Cargo, empresa AS Empresa, correo AS Correo, telefono AS Teléfono, ultimo_registro AS Última_Cotización FROM clientes ORDER BY ultimo_registro DESC", conn)
-        conn.close()
-        
-        if not df.empty:
-            st.dataframe(df, use_container_width=True)
-        else:
-            st.info("Aún no tienes clientes guardados. Se crearán al generar tu primera cotización.")
-    except Exception:
-        st.info("La base de datos se inicializará cuando crees tu primera cotización en la Pestaña 1.")
+    # Obtenemos todos los clientes registrados llamando a la función sin filtro
+    clientes = buscar_clientes("") 
+    
+    if not clientes:
+        st.info("Aún no hay clientes registrados en tu Google Sheets. Se agregarán automáticamente al generar tu primera cotización.")
+        return
+
+    # Si hay clientes, los mostramos en una tabla limpia o formato amigable
+    import pandas as pd
+    df_clientes = pd.DataFrame(clientes, columns=["Contacto", "Cargo", "Empresa", "Correo", "Teléfono"])
+    st.dataframe(df_clientes, use_container_width=True)
