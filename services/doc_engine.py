@@ -18,9 +18,15 @@ def _set_cell_background(cell, fill_hex):
     shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{fill_hex}"/>')
     tcPr.append(shd)
 
-def _aplicar_estilo_parrafo(p, size_pt=DOC_CONFIG["BODY_SIZE_PT"], bold=False, color_hex=COLORS["TEXT_HEX"], keep_next=False):
-    """Aplica formato tipográfico coherente y protección contra saltos de hoja."""
+def _evitar_salto_fila(row):
+    """Evita que una fila de tabla se parta a la mitad entre dos páginas."""
+    trPr = row._tr.get_or_add_trPr()
+    trPr.append(parse_xml(f'<w:cantSplit {nsdecls("w")}/>'))
+
+def _aplicar_estilo_parrafo(p, size_pt=DOC_CONFIG["BODY_SIZE_PT"], bold=False, color_hex=COLORS["TEXT_HEX"], keep_next=False, keep_together=True):
+    """Aplica formato tipográfico y amarra párrafos para evitar saltos huérfanos."""
     p.paragraph_format.keep_with_next = keep_next
+    p.paragraph_format.keep_together = keep_together
     for run in p.runs:
         run.font.name = DOC_CONFIG["FONT_NAME"]
         run.font.size = Pt(size_pt)
@@ -29,7 +35,7 @@ def _aplicar_estilo_parrafo(p, size_pt=DOC_CONFIG["BODY_SIZE_PT"], bold=False, c
 
 def generar_cotizacion_docx(datos):
     """
-    Genera el documento oficial en Word (.docx) aplicando las reglas editoriales institucionales.
+    Genera el documento oficial en Word (.docx) aplicando bloques indivisibles sin saltos rotos.
     """
     doc = docx.Document()
     
@@ -79,7 +85,7 @@ def generar_cotizacion_docx(datos):
     p_client.add_run(f"{datos.get('cliente_empresa', 'Empresa / Constructora')}\n")
     p_client.add_run("Presente.\n")
     p_client.add_run(f"\nRef: Propuesta de Servicios — {datos.get('nombre_proyecto', 'Levantamiento Topográfico')}")
-    _aplicar_estilo_parrafo(p_client, bold=True, color_hex=COLORS["PRIMARY_HEX"])
+    _aplicar_estilo_parrafo(p_client, bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     # --- 4. SECCIÓN 1: OBJETIVO DEL PROYECTO ---
     h1 = doc.add_heading(level=2)
@@ -87,7 +93,7 @@ def generar_cotizacion_docx(datos):
     _aplicar_estilo_parrafo(h1, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     p_obj = doc.add_paragraph(datos.get("objetivo", ""))
-    _aplicar_estilo_parrafo(p_obj)
+    _aplicar_estilo_parrafo(p_obj, keep_together=True)
     
     # --- 5. SECCIÓN 2: METODOLOGÍA DE TRABAJO ---
     h2 = doc.add_heading(level=2)
@@ -95,7 +101,7 @@ def generar_cotizacion_docx(datos):
     _aplicar_estilo_parrafo(h2, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     p_met = doc.add_paragraph(datos.get("metodologia", ""))
-    _aplicar_estilo_parrafo(p_met)
+    _aplicar_estilo_parrafo(p_met, keep_together=True)
     
     # --- 6. SECCIÓN 3: EQUIPAMIENTO ESPECIALIZADO ---
     h3 = doc.add_heading(level=2)
@@ -103,17 +109,20 @@ def generar_cotizacion_docx(datos):
     _aplicar_estilo_parrafo(h3, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
     p_eq = doc.add_paragraph(datos.get("equipo", ""))
-    _aplicar_estilo_parrafo(p_eq)
+    _aplicar_estilo_parrafo(p_eq, keep_together=True)
     
-    # --- 7. SECCIÓN 4: ENTREGABLES Y ARCHIVOS TÉCNICOS ---
+    # --- 7. SECCIÓN 4: ENTREGABLES (BLOQUE INDIVISIBLE) ---
     h4 = doc.add_heading(level=2)
     h4.add_run("4. Entregables del Proyecto")
     _aplicar_estilo_parrafo(h4, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
-    for item in datos.get("entregables", []):
+    entregables_lista = datos.get("entregables", [])
+    for idx, item in enumerate(entregables_lista):
         p_ent = doc.add_paragraph(f"• {item}")
         p_ent.paragraph_format.left_indent = Inches(0.25)
-        _aplicar_estilo_parrafo(p_ent)
+        # Amarra todas las viñetas entre sí para que jamás se parta la lista
+        es_ultimo = (idx == len(entregables_lista) - 1)
+        _aplicar_estilo_parrafo(p_ent, keep_next=(not es_ultimo), keep_together=True)
 
     # --- 8. SECCIÓN 5: PROPUESTA ECONÓMICA ---
     h5 = doc.add_heading(level=2)
@@ -132,7 +141,9 @@ def generar_cotizacion_docx(datos):
         _set_cell_background(celda, COLORS["PRIMARY_HEX"])
         p = celda.paragraphs[0]
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        _aplicar_estilo_parrafo(p, bold=True, color_hex="FFFFFF")
+        _aplicar_estilo_parrafo(p, bold=True, color_hex="FFFFFF", keep_next=True)
+    
+    _evitar_salto_fila(tabla.rows[0])
         
     total_mxn = 0.0
     for idx, cons in enumerate(conceptos):
@@ -148,6 +159,7 @@ def generar_cotizacion_docx(datos):
         if idx % 2 == 1:
             for col_c in row_cells:
                 _set_cell_background(col_c, COLORS["ZEBRA_HEX"])
+        _evitar_salto_fila(tabla.rows[idx + 1])
                 
     # Fila de Total
     celda_tot_lbl = tabla.rows[-1].cells[1]
@@ -159,18 +171,22 @@ def generar_cotizacion_docx(datos):
     celda_tot_val.text = f"$ {total_mxn:,.2f}"
     celda_tot_val.paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.RIGHT
     _aplicar_estilo_parrafo(celda_tot_val.paragraphs[0], bold=True, color_hex=COLORS["PRIMARY_HEX"])
+    _evitar_salto_fila(tabla.rows[-1])
     
     doc.add_paragraph()
     
-    # --- 9. SECCIÓN 6: EXCLUSIONES Y PREMISAS TÉCNICAS ---
+    # --- 9. SECCIÓN 6: EXCLUSIONES (BLOQUE INDIVISIBLE CONTRA SALTOS ROTOS) ---
     h6 = doc.add_heading(level=2)
     h6.add_run("6. Premisas Técnicas y Exclusiones")
     _aplicar_estilo_parrafo(h6, size_pt=DOC_CONFIG["TITLE_SIZE_PT"], bold=True, color_hex=COLORS["PRIMARY_HEX"], keep_next=True)
     
-    for excl in datos.get("exclusiones", []):
+    exclusiones_lista = datos.get("exclusiones", [])
+    for idx, excl in enumerate(exclusiones_lista):
         p_ex = doc.add_paragraph(f"• {excl}")
         p_ex.paragraph_format.left_indent = Inches(0.25)
-        _aplicar_estilo_parrafo(p_ex, color_hex=COLORS["SECONDARY_HEX"])
+        # Obliga a que la sección completa se mueva unida a la siguiente hoja si no cabe
+        es_ultimo = (idx == len(exclusiones_lista) - 1)
+        _aplicar_estilo_parrafo(p_ex, color_hex=COLORS["SECONDARY_HEX"], keep_next=(not es_ultimo), keep_together=True)
         
     # --- 10. CLÁUSULAS Y SALUDO FINAL ---
     h7 = doc.add_heading(level=2)
@@ -182,15 +198,16 @@ def generar_cotizacion_docx(datos):
         "• Condiciones de pago: 50% de anticipo para movilización de brigada en campo y 50% contra entrega de informe técnico y archivos finales.\n"
         "• Los precios enunciados están en Moneda Nacional (MXN) y no incluyen I.V.A."
     )))
-    _aplicar_estilo_parrafo(p_cl)
+    _aplicar_estilo_parrafo(p_cl, keep_next=True, keep_together=True)
     
     p_sal = doc.add_paragraph(datos.get("saludo_final", "Agradeciendo de antemano su confianza, quedamos a su entera disposición para cualquier aclaración técnica o modificación que requiera el proyecto."))
-    _aplicar_estilo_parrafo(p_sal, keep_next=True)
+    _aplicar_estilo_parrafo(p_sal, keep_next=True, keep_together=True)
     
-    # --- 11. BLOQUE DE FIRMA Y DATOS BANCARIOS ---
+    # --- 11. BLOQUE DE FIRMA Y DATOS BANCARIOS (100% AMARRADO AL SALUDO) ---
     p_sign = doc.add_paragraph()
-    p_sign.paragraph_format.keep_with_next = True
-    p_sign.paragraph_format.space_before = Pt(24)
+    p_sign.paragraph_format.keep_with_next = False
+    p_sign.paragraph_format.keep_together = True
+    p_sign.paragraph_format.space_before = Pt(18)
     
     run_att = p_sign.add_run("Atentamente,\n\n\n\n")
     run_att.font.name = DOC_CONFIG["FONT_NAME"]
