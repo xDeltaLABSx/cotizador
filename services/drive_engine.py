@@ -9,10 +9,8 @@ from googleapiclient.http import MediaIoBaseUpload
 def obtener_servicio_drive():
     try:
         if "gcp_service_account" in st.secrets:
-            # Convertimos los secretos a un diccionario normal
             secretos = dict(st.secrets["gcp_service_account"])
             
-            # Limpiamos la llave privada restaurando los saltos de línea reales si viene en una sola línea
             if "private_key" in secretos:
                 pk = secretos["private_key"].strip()
                 pk = pk.replace("\\n", "\n").replace("\r", "")
@@ -24,6 +22,8 @@ def obtener_servicio_drive():
             )
             return build("drive", "v3", credentials=creds)
     except Exception as e:
+        # Esto imprimirá el error real en tu consola o interfaz para saber el motivo exacto
+        st.error(f"DETALLE TÉCNICO DE GOOGLE: {str(e)}")
         print(f"Error autenticando con Google: {e}")
     return None
 
