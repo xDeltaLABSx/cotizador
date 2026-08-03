@@ -1,13 +1,12 @@
 # views/quote_builder.py
 import streamlit as st
 from datetime import datetime
-from models.template_model import obtener_catalogo_completo, obtener_servicio_por_id, guardar_nueva_plantilla
+from models.template_model import obtener_catalogo_completo, guardar_nueva_plantilla
 from models.client_model import buscar_clientes, guardar_o_actualizar_cliente
 from services.doc_engine import generar_cotizacion_docx
 from services.drive_engine import guardar_en_drive_y_excel
 from services.plantillas import cargar_plantillas_iniciales
 from config.settings import COMPANY_INFO
-from models.client_model import guardar_o_actualizar_cliente
 
 
 def render_quote_builder():
@@ -43,7 +42,7 @@ def render_quote_builder():
 
     st.markdown("---")
 
-   # =========================================================================
+    # =========================================================================
     # 2. SELECCIÓN Y MODIFICACIÓN TÉCNICA DEL SERVICIO
     # =========================================================================
     st.markdown("### 2. Selección y Modificación Técnica del Servicio")
@@ -83,14 +82,12 @@ def render_quote_builder():
     seleccion_nombre = st.selectbox("Seleccione Plantilla Base de Trabajo", list(opciones.keys()), key="select_servicio_base")
     servicio_id = opciones[seleccion_nombre]
     
-    # Buscamos la ficha seleccionada en el catálogo
     servicio_sel = next((s for s in catalogo["servicios"] if s["id"] == servicio_id or s["nombre"] == seleccion_nombre), None)
     
     if not servicio_sel:
         st.error("⚠️ Error al cargar la plantilla seleccionada.")
         return
     
-    # FORZAMOS la lectura directa desde plantillas_base de Python si el JSON no trae los entregables actualizados
     info_base_python = plantillas_base.get(seleccion_nombre, {})
     entregables_oficiales = info_base_python.get("entregables") or servicio_sel.get("entregables") or (
         "Archivos CAD (DWG / DXF) con planimetría, retícula UTM y curvas de nivel.\n"
@@ -103,7 +100,6 @@ def render_quote_builder():
         "El cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
     )
 
-    # Cuadros de texto EDITABLES AL MOMENTO
     objetivo_mod = st.text_area("Objetivo del Proyecto (Editable)", value=servicio_sel.get("objetivo", ""), height=80, key=f"obj_{servicio_id}")
     metodologia_mod = st.text_area("Metodología Técnica (Editable)", value=servicio_sel.get("metodologia", ""), height=130, key=f"met_{servicio_id}")
     equipo_mod = st.text_area("Equipamiento Desplegado (Editable)", value=servicio_sel.get("equipo", ""), height=80, key=f"eq_{servicio_id}")
@@ -191,7 +187,7 @@ def render_quote_builder():
     st.markdown("---")
 
     # =========================================================================
-    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS (Conector directo desde Python)
+    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS
     # =========================================================================
     st.markdown("### 4. Entregables, Exclusiones y Términos")
     
@@ -227,13 +223,20 @@ def render_quote_builder():
         st.session_state.doc_nombre = ""
 
     st.markdown("---")
+
     # =========================================================================
     # 5. EMISIÓN DE COTIZACIÓN Y RESPALDO
     # =========================================================================
     if st.button("🚀 Generar Word y Subir a Google Drive en Automático", type="primary", use_container_width=True):
         try:
-            # 1. Guardar cliente en la base de datos local
-            guardar_o_actualizar_cliente(atencion, cargo, empresa, correo, telefono)
+            # 1. Guardar o actualizar cliente en Google Sheets de forma centralizada
+            guardar_o_actualizar_cliente(
+                nombre_atencion=atencion,
+                cargo=cargo,
+                empresa=empresa,
+                correo=correo,
+                telefono=telefono
+            )
             
             # 2. Registrar nueva plantilla si el usuario lo marcó
             if guardar_como_nueva and nombre_nueva_plantilla:
@@ -246,7 +249,8 @@ def render_quote_builder():
                     precio_base=monto_concepto
                 )
                 st.toast("✅ ¡Nueva plantilla guardada en tu catálogo!")
-# 3. Empaquetar datos de forma blindada para el generador Word
+
+            # 3. Empaquetar datos de forma blindada para el generador Word
             datos_completos = {
                 "ciudad": ciudad,
                 "fecha_dt": datetime.now(),
@@ -257,7 +261,6 @@ def render_quote_builder():
                 "objetivo": objetivo_mod,
                 "metodologia": metodologia_mod,
                 "equipo": equipo_mod,
-                # Formato en lista de diccionarios con tipos de datos explícitos
                 "conceptos_economicos": [
                     {
                         "desc": str(desc_concepto),
@@ -281,17 +284,8 @@ def render_quote_builder():
             
             st.session_state.doc_word = doc_bytes
             st.session_state.doc_nombre = nombre_archivo
-           
-# Y justo cuando el usuario hace clic en generar la cotización, añade esta línea:
-guardar_o_actualizar_cliente(
-    nombre_atencion=atencion,  # Variable donde guardas el nombre del contacto
-    cargo=cargo,               # Variable del cargo o departamento
-    empresa=empresa,           # Variable de la constructora/empresa
-    correo=correo_cliente,     # Correo (si lo tienes en el form, o "" si no)
-    telefono=tel_cliente       # Teléfono (si lo tienes en el form, o "" si no)
-)
             
-            # 5. SUBIDA AUTOMÁTICA A GOOGLE DRIVE EN SEGUNDO PLANO
+            # 5. SUBIDA AUTOMÁTICA A GOOGLE DRIVE Y EXCEL EN SEGUNDO PLANO
             folder_id = st.secrets.get("DRIVE_FOLDER_ID", "1l0AxPvFgqbqc-brpuqZDj1o1k50Qd3UT")
             sheet_id = st.secrets.get("SHEETS_EXCEL_ID", "")
             
@@ -305,7 +299,7 @@ guardar_o_actualizar_cliente(
             )
             
             if exito:
-                st.success("✅ ¡Documento Word generado y respaldado en Google Drive en automático!")
+                st.success("✅ ¡Documento Word generado y respaldado en Google Drive y Google Sheets en automático!")
             else:
                 st.success("✅ ¡Documento Word generado con éxito!")
                 st.warning(f"Aviso de Drive: {mensaje}")
@@ -313,7 +307,7 @@ guardar_o_actualizar_cliente(
         except Exception as error:
             st.error(f"⚠️ Ocurrió un detalle técnico al procesar el archivo: {str(error)}")
 
-    # Botón de descarga directa del Word para tu uso inmediato
+    # Botón de descarga directa del Word para uso inmediato
     if st.session_state.doc_word:
         st.download_button(
             label="📥 Descargar Documento Word (.docx)",
