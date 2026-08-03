@@ -167,13 +167,13 @@ def render_quote_builder():
         desc_concepto = st.text_input("Descripción del Cobro", value=f"Servicios de Topografía - {seleccion_nombre}", key=f"desc_{servicio_id}")
     
     with col_monto:
+        # Vinculado dinámicamente al cálculo sugerido (estimado_auto)
         monto_concepto = st.number_input(
             "Importe Final a Cotizar ($ MXN) *", 
             value=float(estimado_auto), 
             min_value=0.0,
             step=500.0,
-            format="%.2f",
-            key=f"monto_{servicio_id}"
+            format="%.2f"
         )
         
     with col_iva:
