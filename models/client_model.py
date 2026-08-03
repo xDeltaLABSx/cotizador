@@ -12,24 +12,24 @@ except ImportError:
 SHEET_ID_CONFIG = "1UjSc9_tCWfw5dsn4Vu_0R5UTTlrnRNUZHDDiUqoMhv4"  # Tu ID de Google Sheets maestro
 
 def _obtener_hoja_clientes():
-    """Conecta con la pestaña 'Clientes' de tu Google Sheet maestro."""
+    """Conecta directamente con la primera pestaña activa de tu Google Sheet maestro."""
     if not get_gspread_client:
         return None
     try:
         gc = get_gspread_client()
         doc = gc.open_by_key(SHEET_ID_CONFIG)
         
-        # Intentamos obtener o crear la pestaña 'Clientes'
-        try:
-            worksheet = doc.worksheet("Clientes")
-        except Exception:
-            worksheet = doc.add_worksheet(title="Clientes", rows="100", cols="7")
-            # Creamos los encabezados si la pestaña es nueva
-            worksheet.append_row(["Contacto", "Cargo", "Empresa", "Correo", "Teléfono", "Último Registro"])
+        # Selecciona siempre la primera pestaña del documento (índice 0)
+        worksheet = doc.get_worksheet(0)
         
+        # Verificamos si la primera fila está vacía para poner los encabezados automáticamente
+        vals = worksheet.get_all_values()
+        if not vals or len(vals[0]) == 0:
+            worksheet.append_row(["Contacto", "Cargo", "Empresa", "Correo", "Teléfono", "Último Registro"])
+            
         return worksheet
     except Exception as e:
-        print(f"Error conectando a la hoja de clientes en Google Sheets: {e}")
+        print(f"Error conectando a la hoja en Google Sheets: {e}")
         return None
 
 def init_client_db():
