@@ -33,7 +33,7 @@ def _aplicar_estilo_parrafo(p, size_pt=BODY_SIZE_PT, bold=False, color_hex=COLOR
     p.paragraph_format.space_after = Pt(space_after)
     for run in p.runs:
         run.font.name = FONT_NAME
-        run.font.size = Pt(size_pt)
+        run.font.size = Pt(size_pt) # Fuerza el tamaño de 10.5 pt en cada línea de texto
         run.font.bold = bold
         run.font.color.rgb = _hex_a_rgb(color_hex)
 
