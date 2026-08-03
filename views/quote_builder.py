@@ -144,13 +144,13 @@ def render_quote_builder():
             # 4. Generar primero el documento Word maestro con la plantilla base y membrete
             st.session_state.doc_word = generar_cotizacion_docx(datos_completos)
             
-            # 5. Generar el PDF tomando exactamente como base el Word recién creado
-            st.session_state.doc_pdf = convertir_docx_a_pdf(st.session_state.doc_word)
+            # 5. Generar el PDF pasándole los datos limpios de manera nativa y homologada
+            st.session_state.doc_pdf = convertir_docx_a_pdf(datos=datos_completos)
             
             st.session_state.doc_nombre = nombre_personalizado.replace(" ", "_")
             st.session_state.datos_cache = datos_completos
             
-            st.success("✅ ¡Archivos Word y PDF generados con éxito respetando tu membrete y diseño oficial!")
+            st.success("✅ ¡Archivos Word (.docx) y PDF (.pdf) generados con éxito!")
             
         except Exception as error:
             st.error(f"⚠️ Ocurrió un detalle técnico al procesar los archivos: {str(error)}")
