@@ -95,12 +95,10 @@ def render_quote_builder():
         st.session_state.doc_word = None
     if "doc_nombre" not in st.session_state:
         st.session_state.doc_nombre = ""
-    if "datos_cache" not in st.session_state:
-        st.session_state.datos_cache = None
 
     st.markdown("---")
     
-    if st.button("🚀 Generar Documento Word (.docx)", type="primary", use_container_width=True):
+    if st.button("🚀 Generar Word y Subir a Google Drive en Automático", type="primary", use_container_width=True):
         try:
             # 1. Guardar cliente en la base de datos local
             guardar_o_actualizar_cliente(atencion, cargo, empresa, correo, telefono)
@@ -139,16 +137,35 @@ def render_quote_builder():
             }
             
             # 4. Generar el documento Word maestro basado en tu plantilla oficial
-            st.session_state.doc_word = generar_cotizacion_docx(datos_completos)
-            st.session_state.doc_nombre = nombre_personalizado.replace(" ", "_")
-            st.session_state.datos_cache = datos_completos
+            doc_bytes = generar_cotizacion_docx(datos_completos)
+            nombre_archivo = nombre_personalizado.replace(" ", "_")
             
-            st.success("✅ ¡Documento Word generado con éxito y listo para descargar!")
+            st.session_state.doc_word = doc_bytes
+            st.session_state.doc_nombre = nombre_archivo
+            
+            # 5. SUBIDA AUTOMÁTICA A GOOGLE DRIVE EN SEGUNDO PLANO
+            folder_id = st.secrets.get("DRIVE_FOLDER_ID", "1l0AxPvFgqbqc-brpuqZDj1o1k50Qd3UT")
+            sheet_id = st.secrets.get("SHEETS_EXCEL_ID", "") # Opcional si ya no usas hoja de cálculo
+            
+            exito, mensaje = guardar_en_drive_y_excel(
+                datos_completos,
+                doc_bytes,
+                None,  # Sin PDF
+                nombre_archivo,
+                folder_id,
+                sheet_id
+            )
+            
+            if exito:
+                st.success("✅ ¡Documento Word generado y respaldado en Google Drive en automático!")
+            else:
+                st.success("✅ ¡Documento Word generado con éxito!")
+                st.warning(f"Aviso de Drive: {mensaje}")
             
         except Exception as error:
             st.error(f"⚠️ Ocurrió un detalle técnico al procesar el archivo: {str(error)}")
 
-    # Botón de descarga directa del Word y respaldo en Google Drive/Sheets
+    # Botón de descarga directa del Word para tu uso inmediato
     if st.session_state.doc_word:
         st.download_button(
             label="📥 Descargar Documento Word (.docx)",
@@ -157,24 +174,3 @@ def render_quote_builder():
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             use_container_width=True
         )
-        
-        st.markdown("---")
-        st.markdown("#### ☁️ Respaldo en Google Drive y Excel (Google Sheets)")
-        
-        folder_id = st.secrets.get("DRIVE_FOLDER_ID", "PEGA_AQUI_ID_DE_TU_CARPETA_DRIVE")
-        sheet_id = st.secrets.get("SHEETS_EXCEL_ID", "PEGA_AQUI_ID_DE_TU_EXCEL")
-        
-        if st.button("☁️ Subir Word a Drive y Registrar Fila en Excel", use_container_width=True):
-            # Llamada al motor de Drive con el archivo Word generado
-            exito, mensaje = guardar_en_drive_y_excel(
-                st.session_state.datos_cache,
-                st.session_state.doc_word,
-                None,  # Sin PDF
-                st.session_state.doc_nombre,
-                folder_id,
-                sheet_id
-            )
-            if exito:
-                st.success(mensaje)
-            else:
-                st.warning(mensaje)
