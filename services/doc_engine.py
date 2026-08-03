@@ -9,6 +9,9 @@ import io
 import os
 from config.settings import COMPANY_INFO, COLORS, DOC_CONFIG, obtener_fecha_formal
 
+# --- RUTA ABSOLUTA AL RAÍZ DEL PROYECTO ---
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 def _hex_a_rgb(hex_str):
     """Convierte color hexadecimal en objeto RGBColor para python-docx."""
     return RGBColor(int(hex_str[0:2], 16), int(hex_str[2:4], 16), int(hex_str[4:6], 16))
@@ -36,20 +39,19 @@ def _aplicar_estilo_parrafo(p, size_pt=DOC_CONFIG["BODY_SIZE_PT"], bold=False, c
 
 def generar_cotizacion_docx(datos):
     """
-    Genera la cotización respetando el diseño dual (Hoja 1 con Logo / Hoja 2+ sin Logo).
+    Genera la cotización cargando tu documento Word (.docx) base con membrete incluido.
     """
-    ruta_plantilla = os.path.join("assets", "plantilla_base.docx")
+    ruta_plantilla = os.path.join(BASE_DIR, "assets", "plantilla_base.docx")
     
-    # --- 1. CARGA DEL MOLDE OFICIAL CON PRIMERA PÁGINA DIFERENTE ---
+    # --- 1. CARGA DEL MOLDE OFICIAL ---
+    # Usamos la ruta absoluta para que Streamlit Cloud encuentre el archivo siempre
     if os.path.exists(ruta_plantilla):
         doc = docx.Document(ruta_plantilla)
-        # Blindaje: Garantiza que Python active y respete tu Hoja 1 vs Hoja 2
-        for section in doc.sections:
-            section.different_first_page_header_footer = True
     else:
-        doc = docx.Document()
+        # Si no encuentra el archivo en GitHub, lanzamos un error claro para no fallar en silencio
+        raise FileNotFoundError(f"No se encontró el archivo base en: {ruta_plantilla}. Verifica que esté subido en la carpeta assets/ de GitHub.")
 
-    # --- 2. FECHA FORMAL MEXICANA (INICIO EN HOJA 1) ---
+    # --- 2. FECHA FORMAL MEXICANA ---
     p_date = doc.add_paragraph()
     p_date.paragraph_format.space_before = Pt(6)
     p_date.alignment = WD_ALIGN_PARAGRAPH.RIGHT
