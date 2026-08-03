@@ -4,7 +4,7 @@ from datetime import datetime
 from models.template_model import obtener_catalogo_completo, obtener_servicio_por_id, guardar_nueva_plantilla
 from models.client_model import buscar_clientes, guardar_o_actualizar_cliente
 from services.doc_engine import generar_cotizacion_docx
-from services.drive_engine import guardar_en_docx_y_excel  # (O tu función de respaldo en Drive)
+from services.drive_engine import guardar_en_drive_y_excel
 from config.settings import COMPANY_INFO
 
 def render_quote_builder():
@@ -157,3 +157,24 @@ def render_quote_builder():
             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             use_container_width=True
         )
+        
+        st.markdown("---")
+        st.markdown("#### ☁️ Respaldo en Google Drive y Excel (Google Sheets)")
+        
+        folder_id = st.secrets.get("DRIVE_FOLDER_ID", "PEGA_AQUI_ID_DE_TU_CARPETA_DRIVE")
+        sheet_id = st.secrets.get("SHEETS_EXCEL_ID", "PEGA_AQUI_ID_DE_TU_EXCEL")
+        
+        if st.button("☁️ Subir Word a Drive y Registrar Fila en Excel", use_container_width=True):
+            # Llamada al motor de Drive con el archivo Word generado
+            exito, mensaje = guardar_en_drive_y_excel(
+                st.session_state.datos_cache,
+                st.session_state.doc_word,
+                None,  # Sin PDF
+                st.session_state.doc_nombre,
+                folder_id,
+                sheet_id
+            )
+            if exito:
+                st.success(mensaje)
+            else:
+                st.warning(mensaje)
