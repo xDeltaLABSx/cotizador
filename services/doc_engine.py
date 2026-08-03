@@ -225,4 +225,4 @@ def generar_cotizacion_docx(datos):
 buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
-    return buffer
+    return buffer.getvalue()
