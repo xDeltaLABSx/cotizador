@@ -222,8 +222,7 @@ def generar_cotizacion_docx(datos):
     run_bank.font.size = Pt(8.5)
     run_bank.font.color.rgb = _hex_a_rgb(COLORS["SECONDARY_HEX"])
     
-    # Salida a memoria
-    buffer = io.BytesIO()
+buffer = io.BytesIO()
     doc.save(buffer)
     buffer.seek(0)
     return buffer
