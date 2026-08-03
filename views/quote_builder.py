@@ -97,29 +97,67 @@ def render_quote_builder():
     if guardar_como_nueva:
         nombre_nueva_plantilla = st.text_input("Nombre de tu nueva plantilla", placeholder="Ej. Vuelo Dron - Corredor Vial")
     st.markdown("---")
+  # =========================================================================
+    # 3. PROPUESTA ECONÓMICA (Cálculo Dinámico según m2, ha, jornada, lote o semana)
     # =========================================================================
-    # 3. PROPUESTA ECONÓMICA (Cálculo Inteligente + Modificable por el Usuario)
-    # =========================================================================
-    st.subheader("3. Propuesta Económica")
+    st.markdown("### 3. Propuesta Económica")
     
-    # 1. Obtenemos los parámetros de cobro de la plantilla seleccionada
+    # 1. Obtenemos los parámetros exactos de tu tabla oficial
     area_min = float(servicio_sel.get("area_min", 1.0))
     precio_min = float(servicio_sel.get("precio_min", 1000.0))
     precio_extra = float(servicio_sel.get("precio_extra", 0.0))
-    unidad_act = servicio_sel.get("unidad", "m2")
+    unidad_act = str(servicio_sel.get("unidad_default", s.get("unidad", "m2"))).strip().lower()
     
-    # 2. Captura de cantidad o área del proyecto
+    # 2. Configuración dinámica del título y comportamiento según la unidad
+    config_unidades = {
+        "m2": {
+            "etiqueta": "Área del Proyecto [m2]:",
+            "paso": 50.0,
+            "ayuda": "Superficie total a levantar en metros cuadrados."
+        },
+        "ha": {
+            "etiqueta": "Superficie del Proyecto [ha]:",
+            "paso": 1.0,
+            "ayuda": "Superficie total en hectáreas."
+        },
+        "jornada": {
+            "etiqueta": "Número de Jornadas [jornadas]:",
+            "paso": 1.0,
+            "ayuda": "Días o jornadas operativas de trabajo en campo/gabinete."
+        },
+        "lote": {
+            "etiqueta": "Cantidad de Lotes / Puntos [lotes]:",
+            "paso": 1.0,
+            "ayuda": "Número de lotes, vértices o líneas base a procesar."
+        },
+        "semana": {
+            "etiqueta": "Tiempo de Asignación [semanas]:",
+            "paso": 1.0,
+            "ayuda": "Semanas completas de renta o asignación de brigada."
+        }
+    }
+
+    # Si la unidad no está en el diccionario, usamos una configuración estándar
+    cfg = config_unidades.get(unidad_act, {
+        "etiqueta": f"Cantidad / Volumen [{unidad_act}]:",
+        "paso": 1.0,
+        "ayuda": f"Ingrese la cantidad total en {unidad_act}."
+    })
+    
+    # 3. Captura dinámica con el título y unidad correctos
     col_cant, col_info_calc = st.columns([1, 2])
     with col_cant:
         cantidad_area = st.number_input(
-            f"Cantidad / Área [{unidad_act}]:", 
-            min_value=0.0, 
-            value=max(1.0, area_min), 
+            label=cfg["etiqueta"],
+            min_value=0.0,
+            value=float(max(1.0, area_min)),
+            step=cfg["paso"],
             format="%.2f",
-            step=10.0 if unidad_act == "m2" else 1.0
+            help=cfg["ayuda"],
+            key=f"input_cant_{servicio_id}"
         )
         
-    # 3. Lógica de cálculo automático DELTA LABS
+    # 4. Lógica de cálculo automática respetando el mínimo de tu tabla
     if cantidad_area <= area_min:
         estimado_auto = precio_min
         excedente_qty = 0.0
@@ -135,7 +173,32 @@ def render_quote_builder():
         )
 
     with col_info_calc:
-        st.info(f"💡 **Cálculo Sugerido según Tabla:**\n{detalle_texto}\n\n**Total Sugerido:** `${estimado_auto:,.2f} MXN`")
+        st.info(f"💡 **Cálculo Sugerido según Tabla DELTA LABS:**\n{detalle_texto}\n\n**Total Sugerido:** `${estimado_auto:,.2f} MXN`")
+
+    st.markdown("---")
+
+    # 5. Ajuste final modificable por el usuario
+    col_desc, col_monto, col_iva = st.columns([2, 1.2, 1])
+    with col_desc:
+        desc_concepto = st.text_input("Descripción del Cobro", value=f"Servicios de Topografía - {seleccion_nombre}")
+    
+    with col_monto:
+        monto_concepto = st.number_input(
+            "Importe Final a Cotizar ($ MXN) *", 
+            value=float(estimado_auto), 
+            min_value=0.0,
+            step=500.0,
+            format="%.2f",
+            help="Puedes modificar o redondear libremente el monto antes de generar tu Word."
+        )
+        
+    with col_iva:
+        incluye_iva = st.checkbox("Incluir IVA (16%)", value=False)
+        if incluye_iva:
+            total_calc = monto_concepto * 1.16
+            st.metric(label="Total con IVA", value=f"${total_calc:,.2f}")
+        else:
+            st.metric(label="Importe Netto", value=f"${monto_concepto:,.2f}")
 
     st.markdown("---")
 
