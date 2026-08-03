@@ -1,6 +1,7 @@
 # services/drive_engine.py
 import os
 import io
+import json
 import streamlit as st
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -8,23 +9,16 @@ from googleapiclient.http import MediaIoBaseUpload
 
 def obtener_servicio_drive():
     try:
-        if "gcp_service_account" in st.secrets:
-            secretos = dict(st.secrets["gcp_service_account"])
+        if "google_json_info" in st.secrets:
+            # Parseamos el texto completo del JSON directamente
+            info_json = json.loads(st.secrets["google_json_info"])
             
-            if "private_key" in secretos:
-                pk = secretos["private_key"].strip()
-                # Si la llave viene comprimida en una sola línea sin saltos reales, la reparamos por código
-                if "----BEGIN PRIVATE KEY----" in pk and "\n" not in pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", ""):
-                    # Limpiamos encabezados y pies para dejar solo el cuerpo base64
-                    cuerpo = pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").strip()
-                    # Reconstruimos la llave con saltos de línea exactos cada 64 caracteres (estándar PEM)
-                    lineas_cuerpo = [cuerpo[i:i+64] for i in range(0, len(cuerpo), 64)]
-                    pk = "-----BEGIN PRIVATE KEY-----\n" + "\n".join(lineas_cuerpo) + "\n-----END PRIVATE KEY-----"
-                
-                secretos["private_key"] = pk
+            # Aseguramos que los saltos de línea de la llave privada sean reales
+            if "private_key" in info_json:
+                info_json["private_key"] = info_json["private_key"].replace("\\n", "\n")
 
             creds = service_account.Credentials.from_service_account_info(
-                secretos, 
+                info_json, 
                 scopes=["https://www.googleapis.com/auth/drive"]
             )
             return build("drive", "v3", credentials=creds)
