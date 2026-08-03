@@ -12,7 +12,7 @@ def guardar_en_drive_y_excel(datos, doc_bytes, pdf_bytes, nombre_archivo, folder
             
         url_script = st.secrets["APPS_SCRIPT_URL"]
         
-        # Convertir el archivo Word a Base64 para enviarlo de manera segura
+        # Convertir el archivo Word a Base64
         b64_file = base64.b64encode(doc_bytes).decode("utf-8")
         
         payload = {
@@ -21,8 +21,13 @@ def guardar_en_drive_y_excel(datos, doc_bytes, pdf_bytes, nombre_archivo, folder
             "file_base64": b64_file
         }
         
-        # Enviar el archivo a través del Webhook de Google Apps Script
+        # Enviar petición POST al Webhook
         response = requests.post(url_script, json=payload, timeout=30)
+        
+        # Verificar si Google devolvió HTML (error de permisos o ejecución) en lugar de JSON
+        if "application/json" not in response.headers.get("Content-Type", ""):
+            return False, f"⚠️ Error de Google Apps Script (HTML devuelto): {response.text[:200]}"
+            
         resultado = response.json()
         
         if resultado.get("status") == "success":
