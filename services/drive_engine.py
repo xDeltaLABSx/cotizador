@@ -11,20 +11,13 @@ def obtener_servicio_drive():
         if "gcp_service_account" in st.secrets:
             secretos = dict(st.secrets["gcp_service_account"])
             
-            if "private_key" in secretos:
-                pk = secretos["private_key"].strip()
-                pk = pk.replace("\\n", "\n").replace("\r", "")
-                secretos["private_key"] = pk
-            
             creds = service_account.Credentials.from_service_account_info(
                 secretos, 
                 scopes=["https://www.googleapis.com/auth/drive"]
             )
             return build("drive", "v3", credentials=creds)
     except Exception as e:
-        # Esto imprimirá el error real en tu consola o interfaz para saber el motivo exacto
         st.error(f"DETALLE TÉCNICO DE GOOGLE: {str(e)}")
-        print(f"Error autenticando con Google: {e}")
     return None
 
 def guardar_en_drive_y_excel(datos, doc_bytes, pdf_bytes, nombre_archivo, folder_id, sheet_id=None):
@@ -33,7 +26,6 @@ def guardar_en_drive_y_excel(datos, doc_bytes, pdf_bytes, nombre_archivo, folder
         if not drive_service:
             return False, "⚠️ No se pudo autenticar con Google Cloud. Revisa tus secretos."
 
-        # Subir archivo Word (.docx)
         fh_docx = io.BytesIO(doc_bytes)
         media_docx = MediaIoBaseUpload(fh_docx, mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document", resumable=True)
         
