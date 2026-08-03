@@ -10,7 +10,7 @@ def guardar_en_drive_y_excel(datos, doc_bytes, pdf_bytes, nombre_archivo, folder
         if "APPS_SCRIPT_URL" not in st.secrets:
             return False, "⚠️ Falta configurar la URL del Webhook en los secretos."
             
-        url_script = st.secrets["https://script.google.com/macros/s/AKfycbynC2tJz42AGOsbR7sB6LHAHB6DTkwgRIt2wAXJZdiz3TMFzu_R3Cs3dmxsT5LXq6KV/exec"]
+        url_script = st.secrets["https://script.google.com/macros/s/AKfycbx-iCa-o1hBSFWhZbVNLRw2O9atGDSuyPt0bU6UanWBj7Ie8q--hFHK8fwf-1WxUUXkmw/exec"]
         
         # Convertir el archivo Word a Base64
         b64_file = base64.b64encode(doc_bytes).decode("utf-8")
