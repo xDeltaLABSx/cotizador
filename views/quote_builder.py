@@ -7,6 +7,7 @@ from services.doc_engine import generar_cotizacion_docx
 from services.drive_engine import guardar_en_drive_y_excel
 from services.plantillas import cargar_plantillas_iniciales
 from config.settings import COMPANY_INFO
+from models.client_model import guardar_o_actualizar_cliente
 
 
 def render_quote_builder():
@@ -280,6 +281,15 @@ def render_quote_builder():
             
             st.session_state.doc_word = doc_bytes
             st.session_state.doc_nombre = nombre_archivo
+           
+# Y justo cuando el usuario hace clic en generar la cotización, añade esta línea:
+guardar_o_actualizar_cliente(
+    nombre_atencion=atencion,  # Variable donde guardas el nombre del contacto
+    cargo=cargo,               # Variable del cargo o departamento
+    empresa=empresa,           # Variable de la constructora/empresa
+    correo=correo_cliente,     # Correo (si lo tienes en el form, o "" si no)
+    telefono=tel_cliente       # Teléfono (si lo tienes en el form, o "" si no)
+)
             
             # 5. SUBIDA AUTOMÁTICA A GOOGLE DRIVE EN SEGUNDO PLANO
             folder_id = st.secrets.get("DRIVE_FOLDER_ID", "1l0AxPvFgqbqc-brpuqZDj1o1k50Qd3UT")
