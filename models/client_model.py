@@ -9,18 +9,15 @@ try:
 except ImportError:
     get_gspread_client = None
 
-SHEET_ID_CONFIG = "1UjSc9_tCWfw5dsn4Vu_0R5UTTlrnRNUZHDDiUqoMhv4"  # El ID de tu Excel maestro en Google Drive
+SHEET_ID_CONFIG = "1UjSc9_tCWfw5dsn4Vu_0R5UTTlrnRNUZHDDiUqoMhv4"  # Tu ID de Google Sheets maestro
 
 def _obtener_hoja_clientes():
     """Conecta con la pestaña 'Clientes' de tu Google Sheet maestro."""
     if not get_gspread_client:
         return None
     try:
-        sheet_id = st.secrets.get(SHEET_ID_CONFIG, "")
-        if not sheet_id:
-            return None
         gc = get_gspread_client()
-        doc = gc.open_by_key(sheet_id)
+        doc = gc.open_by_key(SHEET_ID_CONFIG)
         
         # Intentamos obtener o crear la pestaña 'Clientes'
         try:
@@ -112,7 +109,7 @@ def buscar_clientes(termino=""):
                 # Formato esperado por la app: (nombre_atencion, cargo_departamento, empresa, correo, telefono)
                 resultados.append((contacto, cargo, empresa, correo, telefono))
                 
-        # Ordenamos de manera simulada por fecha más reciente (si existe columna de registro) y limitamos a 10
+        # Ordenamos de manera simulada por fecha más reciente y limitamos a 10
         resultados = resultados[:10]
         return resultados
     except Exception as e:
