@@ -1,5 +1,6 @@
 # views/client_directory.py
 import streamlit as st
+import pandas as pd
 import sqlite3
 import os
 
@@ -46,65 +47,71 @@ def render_client_directory():
         st.info("Aún no hay clientes registrados. Se agregarán automáticamente al generar tu primera cotización.")
         return
 
-    # Control de edición en sesión
     if "editando_id" not in st.session_state:
         st.session_state.editando_id = None
 
-    st.markdown("### Listado General de Clientes")
-
-    # Encabezados de la tabla personalizada
-    header_cols = st.columns([2.2, 1.8, 1.5, 1.2, 1.2, 1.3])
-    header_cols[0].markdown("**Empresa**")
-    header_cols[1].markdown("**Contacto (Cargo)**")
-    header_cols[2].markdown("**Correo / Tel.**")
-    header_cols[3].markdown("**Última Interacción**")
-    header_cols[4].markdown("**Editar**")
-    header_cols[5].markdown("**Borrar**")
-    st.markdown("---")
-
-    for c in clientes:
-        cliente_id, contacto, cargo, empresa, correo, telefono, ultimo_reg = c
+    # Si se seleccionó editar un cliente, mostramos un formulario limpio y compacto
+    if st.session_state.editando_id:
+        c_id = st.session_state.editando_id
+        # Buscamos los datos actuales del cliente
+        cliente_actual = next((c for c in clientes if c[0] == c_id), None)
         
-        # Si este cliente está en modo edición, mostramos el formulario de edición en lugar de la fila normal
-        if st.session_state.editando_id == cliente_id:
-            with st.form(key=f"form_edit_{cliente_id}"):
-                st.markdown(f"#### ✏️ Editando Cliente ID: {cliente_id}")
-                e_empresa = st.text_input("Empresa", value=empresa)
-                e_contacto = st.text_input("Contacto", value=contacto)
-                e_cargo = st.text_input("Cargo", value=cargo)
-                e_correo = st.text_input("Correo", value=correo if correo else "")
-                e_telefono = st.text_input("Teléfono", value=telefono if telefono else "")
+        if cliente_actual:
+            with st.form(key=f"form_edit_compact_{c_id}"):
+                st.markdown(f"### ✏️ Editando Cliente: {cliente_actual[3]}")
+                ec1, ec2 = st.columns(2)
+                with ec1:
+                    e_empresa = st.text_input("Empresa", value=cliente_actual[3])
+                    e_contacto = st.text_input("Contacto", value=cliente_actual[1])
+                    e_cargo = st.text_input("Cargo", value=cliente_actual[2])
+                with ec2:
+                    e_correo = st.text_input("Correo", value=cliente_actual[4] if cliente_actual[4] else "")
+                    e_telefono = st.text_input("Teléfono", value=cliente_actual[5] if cliente_actual[5] else "")
                 
-                col_save, col_cancel = st.columns(2)
-                with col_save:
+                b1, b2 = st.columns(2)
+                with b1:
                     if st.form_submit_button("💾 Guardar Cambios", type="primary", use_container_width=True):
-                        actualizar_cliente(cliente_id, e_contacto, e_cargo, e_empresa, e_correo, e_telefono)
+                        actualizar_cliente(c_id, e_contacto, e_cargo, e_empresa, e_correo, e_telefono)
                         st.session_state.editando_id = None
                         st.toast("✅ ¡Cliente actualizado con éxito!")
                         st.rerun()
-                with col_cancel:
-                    if st.form_submit_button("❌ Cancelar", use_container_width=True):
+                with b2:
+                    if st.form_submit_button("❌ Cancelar Edición", use_container_width=True):
                         st.session_state.editando_id = None
                         st.rerun()
             st.markdown("---")
-            continue
 
-        # Fila normal con datos y botones
-        row_cols = st.columns([2.2, 1.8, 1.5, 1.2, 1.2, 1.3])
-        row_cols[0].write(empresa)
-        row_cols[1].write(f"{contacto}\n\n*({cargo})*")
-        row_cols[2].write(f"✉️ {correo if correo else 'N/D'}\n📞 {telefono if telefono else 'N/D'}")
-        row_cols[3].caption(ultimo_reg)
+    st.markdown("### 📋 Listado General")
+
+    # Cabecera de la tabla compacta
+    hc = st.columns([2.5, 2.0, 1.5, 1.2, 0.8, 0.8])
+    hc[0].markdown("**Empresa / Contacto**")
+    hc[1].markdown("**Cargo**")
+    hc[2].markdown("**Contacto**")
+    hc[3].markdown("**Última Vez**")
+    hc[4].markdown("**Editar**")
+    hc[5].markdown("**Borrar**")
+    st.markdown("---")
+
+    # Filas compactas estilo renglón de tabla
+    for c in clientes:
+        cliente_id, contacto, cargo, empresa, correo, telefono, ultimo_reg = c
         
-        with row_cols[4]:
-            if st.button("✏️ Editar", key=f"btn_edit_{cliente_id}", use_container_width=True):
+        rc = st.columns([2.5, 2.0, 1.5, 1.2, 0.8, 0.8])
+        rc[0].markdown(f"**{empresa}**<br><span style='color: gray; font-size: 0.85em;'>👤 {contacto}</span>", unsafe_allow_html=True)
+        rc[1].markdown(f"<span style='font-size: 0.9em;'>{cargo if cargo else 'N/D'}</span>", unsafe_allow_html=True)
+        rc[2].markdown(f"<span style='font-size: 0.85em;'>✉️ {correo if correo else 'N/D'}<br>📞 {telefono if telefono else 'N/D'}</span>", unsafe_allow_html=True)
+        rc[3].caption(str(ultimo_reg)[:10]) # Muestra solo la fecha YYYY-MM-DD para ahorrar espacio
+        
+        with rc[4]:
+            if st.button("✏️", key=f"edit_{cliente_id}", help="Editar cliente"):
                 st.session_state.editando_id = cliente_id
                 st.rerun()
                 
-        with row_cols[5]:
-            if st.button("🗑️ Borrar", key=f"btn_del_{cliente_id}", type="secondary", use_container_width=True):
+        with rc[5]:
+            if st.button("🗑️", key=f"del_{cliente_id}", help="Eliminar cliente"):
                 eliminar_cliente(cliente_id)
-                st.toast(f"🗑️ Cliente {empresa} eliminado.")
+                st.toast(f"🗑️ Cliente eliminado.")
                 st.rerun()
                 
-        st.markdown("---")
+        st.markdown("<hr style='margin: 4px 0px; opacity: 0.2;'>", unsafe_allow_html=True)
