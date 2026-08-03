@@ -1,57 +1,50 @@
 # services/drive_engine.py
+import os
+import io
 import streamlit as st
-import gspread
-from google.oauth2.service_account import Credentials
+from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
-import io
-from datetime import datetime
 
-SCOPES = [
-    'https://www.googleapis.com/auth/spreadsheets',
-    'https://www.googleapis.com/auth/drive.file'
-]
-
-def conectar_google():
-    """Conecta de forma segura usando st.secrets en Streamlit Cloud."""
-    if "gcp_service_account" not in st.secrets:
-        return None, None
-    creds = Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"], scopes=SCOPES
-    )
-    return gspread.authorize(creds), build('drive', 'v3', credentials=creds)
-
-def guardar_en_drive_y_excel(datos, word_bytes, pdf_bytes, nombre_base, drive_folder_id, sheet_id):
-    """
-    Subirá el .docx y .pdf a tu carpeta de Google Drive y añadirá un renglón a tu Excel/Google Sheet.
-    """
+def obtener_servicio_drive():
     try:
-        gclient, drive_service = conectar_google()
-        if not gclient:
-            return False, "⚠️ Falta configurar st.secrets['gcp_service_account'] en Streamlit Cloud."
+        if "gcp_service_account" in st.secrets:
+            secretos = dict(st.secrets["gcp_service_account"])
+            # Limpiar posibles espacios o caracteres extraños en la llave privada
+            if "private_key" in secretos:
+                secretos["private_key"] = secretos["private_key"].strip().replace("\r", "")
             
-        # 1. Subir Word (.docx) a la carpeta de Google Drive
-        meta_docx = {'name': f"{nombre_base}.docx", 'parents': [drive_folder_id]}
-        media_docx = MediaIoBaseUpload(io.BytesIO(word_bytes), mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-        drive_service.files().create(body=meta_docx, media_body=media_docx).execute()
+            creds = service_account.Credentials.from_service_account_info(
+                secretos, 
+                scopes=["https://www.googleapis.com/auth/drive"]
+            )
+            return build("drive", "v3", credentials=creds)
+    except Exception as e:
+        print(f"Error autenticando con Google: {e}")
+    return None
+
+def guardar_en_drive_y_excel(datos, doc_bytes, pdf_bytes, nombre_archivo, folder_id, sheet_id=None):
+    try:
+        drive_service = obtener_servicio_drive()
+        if not drive_service:
+            return False, "⚠️ No se pudo autenticar con Google Cloud. Revisa tus secretos."
+
+        # Subir archivo Word (.docx)
+        fh_docx = io.BytesIO(doc_bytes)
+        media_docx = MediaIoBaseUpload(fh_docx, mimetype="application/vnd.openxmlformats-officedocument.wordprocessingml.document", resumable=True)
         
-        # 2. Subir PDF (.pdf) a la carpeta de Google Drive
-        meta_pdf = {'name': f"{nombre_base}.pdf", 'parents': [drive_folder_id]}
-        media_pdf = MediaIoBaseUpload(io.BytesIO(pdf_bytes), mimetype='application/pdf')
-        drive_service.files().create(body=meta_pdf, media_body=media_pdf).execute()
+        file_metadata = {
+            'name': f"{nombre_archivo}.docx",
+            'parents': [folder_id]
+        }
         
-        # 3. Registrar fila en el Excel (Google Sheet)
-        hoja = gclient.open_by_key(sheet_id).sheet1
-        fila = [
-            datetime.now().strftime("%Y-%m-%d %H:%M"),
-            datos.get("cliente_empresa", ""),
-            datos.get("cliente_atencion", ""),
-            datos.get("nombre_proyecto", ""),
-            datos.get("titulo_meta", ""),
-            f"$ {sum(float(c['monto']) for c in datos.get('conceptos_economicos', [])):,.2f}"
-        ]
-        hoja.append_row(fila)
-        return True, "✅ ¡Word y PDF guardados en Drive, y Excel actualizado con éxito!"
+        file = drive_service.files().create(
+            body=file_metadata,
+            media_body=media_docx,
+            fields='id'
+        ).execute()
+
+        return True, f"✅ ¡Archivo subido correctamente a Google Drive (ID: {file.get('id')})!"
         
     except Exception as e:
         return False, f"⚠️ Error de sincronización con Google: {str(e)}"
