@@ -12,8 +12,8 @@ from config.settings import COMPANY_INFO, COLORS, obtener_fecha_formal
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 FONT_NAME = "Segoe UI"
-BODY_SIZE_PT = 10.0
-TITLE_SIZE_PT = 11.5
+BODY_SIZE_PT = 10.5
+TITLE_SIZE_PT = 11.0
 
 def _hex_a_rgb(hex_str):
     return RGBColor(int(hex_str[0:2], 16), int(hex_str[2:4], 16), int(hex_str[4:6], 16))
