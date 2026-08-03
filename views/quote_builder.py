@@ -79,27 +79,29 @@ def render_quote_builder():
         st.error("⚠️ No se encontraron plantillas en tu catálogo ni en services/plantillas.py.")
         return
 
-    # Detectar cambio de servicio para forzar la actualización de la vista
-    seleccion_nombre = st.selectbox("Seleccione Plantilla Base de Trabajo", list(opciones.keys()))
+    seleccion_nombre = st.selectbox("Seleccione Plantilla Base de Trabajo", list(opciones.keys()), key="select_servicio_base")
     servicio_id = opciones[seleccion_nombre]
     
-    if "servicio_previo_id" not in st.session_state:
-        st.session_state["servicio_previo_id"] = servicio_id
-
-    if st.session_state["servicio_previo_id"] != servicio_id:
-        st.session_state["servicio_previo_id"] = servicio_id
-        # Limpiamos las llaves de los text_area para que recarguen el texto del nuevo servicio
-        for k in ["box_entregables_dinamico", "box_exclusiones_dinamico"]:
-            if k in st.session_state:
-                del st.session_state[k]
-        st.rerun()
-
+    # Buscamos la ficha seleccionada en el catálogo
     servicio_sel = next((s for s in catalogo["servicios"] if s["id"] == servicio_id or s["nombre"] == seleccion_nombre), None)
     
     if not servicio_sel:
         st.error("⚠️ Error al cargar la plantilla seleccionada.")
         return
     
+    # FORZAMOS la lectura directa desde plantillas_base de Python si el JSON no trae los entregables actualizados
+    info_base_python = plantillas_base.get(seleccion_nombre, {})
+    entregables_oficiales = info_base_python.get("entregables") or servicio_sel.get("entregables") or (
+        "Archivos CAD (DWG / DXF) con planimetría, retícula UTM y curvas de nivel.\n"
+        "Archivo de Coordenadas (CSV compatible con Trimble Coordinate Manager y Excel).\n"
+        "Memoria Técnica Descriptiva y Reporte Fotográfico del proyecto."
+    )
+    exclusiones_oficiales = info_base_python.get("exclusiones") or servicio_sel.get("exclusiones") or (
+        "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\n"
+        "No incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\n"
+        "El cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
+    )
+
     # Cuadros de texto EDITABLES AL MOMENTO
     objetivo_mod = st.text_area("Objetivo del Proyecto (Editable)", value=servicio_sel.get("objetivo", ""), height=80, key=f"obj_{servicio_id}")
     metodologia_mod = st.text_area("Metodología Técnica (Editable)", value=servicio_sel.get("metodologia", ""), height=130, key=f"met_{servicio_id}")
@@ -187,50 +189,36 @@ def render_quote_builder():
 
     st.markdown("---")
 
-# =========================================================================
-    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS (Contenedor Dinámico)
+    # =========================================================================
+    # 4. ENTREGABLES, EXCLUSIONES Y TÉRMINOS (Conector directo desde Python)
     # =========================================================================
     st.markdown("### 4. Entregables, Exclusiones y Términos")
     
-    # Usamos un contenedor único por cada servicio para forzar su actualización visual al cambiar de selección
-    with st.container(key=f"contenedor_seccion_4_{servicio_id}"):
-        entregables_default = servicio_sel.get("entregables", (
-            "Archivos CAD (DWG / DXF) con planimetría, retícula UTM y curvas de nivel.\n"
-            "Archivo de Coordenadas (CSV compatible con Trimble Coordinate Manager y Excel).\n"
-            "Memoria Técnica Descriptiva y Reporte Fotográfico del proyecto."
-        ))
-        
-        exclusiones_default = servicio_sel.get("exclusiones", (
-            "No incluye brechas, tala, roza ni desmonte de vegetación para apertura de líneas de vista.\n"
-            "No incluye pago de permisos, derechos de paso ni gestiones municipales para accesos a predios privados.\n"
-            "El cliente garantizará el libre acceso y condiciones de seguridad para la brigada técnica en la zona de trabajo."
-        ))
-
-        entregables_text = st.text_area(
-            "Entregables (Uno por línea)", 
-            value=entregables_default, 
-            height=95,
-            key=f"box_ent_{servicio_id}"
-        )
-        
-        exclusiones_text = st.text_area(
-            "Exclusiones (Uno por línea)", 
-            value=exclusiones_default, 
-            height=95,
-            key=f"box_exc_{servicio_id}"
-        )
-        
-        clausulas_text = st.text_area("Cláusulas de Trabajo y Forma de Pago", value=(
-            "• Vigencia de la cotización: 15 días hábiles a partir de la fecha de emisión.\n"
-            "• Forma de pago: 50% de anticipo para iniciar trabajos en campo y 50% contra entrega de resultados finales.\n"
-            "• Los precios no incluyen I.V.A."
-        ), height=80, key=f"box_clau_{servicio_id}")
-        
-        saludo_text = st.text_input(
-            "Saludo de Cierre", 
-            value="Agradeciendo de antemano su confianza, quedamos a su entera disposición para cualquier aclaración técnica.",
-            key=f"box_saludo_{servicio_id}"
-        )
+    entregables_text = st.text_area(
+        "Entregables (Uno por línea)", 
+        value=entregables_oficiales, 
+        height=95,
+        key=f"box_ent_{servicio_id}"
+    )
+    
+    exclusiones_text = st.text_area(
+        "Exclusiones (Uno por línea)", 
+        value=exclusiones_oficiales, 
+        height=95,
+        key=f"box_exc_{servicio_id}"
+    )
+    
+    clausulas_text = st.text_area("Cláusulas de Trabajo y Forma de Pago", value=(
+        "• Vigencia de la cotización: 15 días hábiles a partir de la fecha de emisión.\n"
+        "• Forma de pago: 50% de anticipo para iniciar trabajos en campo y 50% contra entrega de resultados finales.\n"
+        "• Los precios no incluyen I.V.A."
+    ), height=80, key=f"box_clau_{servicio_id}")
+    
+    saludo_text = st.text_input(
+        "Saludo de Cierre", 
+        value="Agradeciendo de antemano su confianza, quedamos a su entera disposición para cualquier aclaración técnica.",
+        key=f"box_saludo_{servicio_id}"
+    )
 
     if "doc_word" not in st.session_state:
         st.session_state.doc_word = None
