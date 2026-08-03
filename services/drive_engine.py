@@ -1,7 +1,6 @@
 # services/drive_engine.py
 import os
 import io
-import json
 import streamlit as st
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
@@ -9,16 +8,10 @@ from googleapiclient.http import MediaIoBaseUpload
 
 def obtener_servicio_drive():
     try:
-        if "google_json_info" in st.secrets:
-            # Parseamos el texto completo del JSON directamente
-            info_json = json.loads(st.secrets["google_json_info"])
-            
-            # Aseguramos que los saltos de línea de la llave privada sean reales
-            if "private_key" in info_json:
-                info_json["private_key"] = info_json["private_key"].replace("\\n", "\n")
-
+        if "gcp_service_account" in st.secrets:
+            # Cargamos directamente las credenciales desde la sección gcp_service_account
             creds = service_account.Credentials.from_service_account_info(
-                info_json, 
+                st.secrets["gcp_service_account"], 
                 scopes=["https://www.googleapis.com/auth/drive"]
             )
             return build("drive", "v3", credentials=creds)
