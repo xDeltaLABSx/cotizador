@@ -141,16 +141,16 @@ def render_quote_builder():
                 "etiquetas_meta": etiquetas_meta
             }
             
-            # 4. Generar primero el documento Word maestro con la plantilla base y membrete
+            # 4. Generar primero el documento Word maestro con la plantilla base, membrete y diseño
             st.session_state.doc_word = generar_cotizacion_docx(datos_completos)
             
-            # 5. Generar el PDF pasándole los datos limpios de manera nativa y homologada
-            st.session_state.doc_pdf = convertir_docx_a_pdf(datos=datos_completos)
+            # 5. Generar el PDF tomando EXACTAMENTE el Word recién creado como base gemela
+            st.session_state.doc_pdf = convertir_docx_a_pdf(docx_bytes=st.session_state.doc_word, datos=datos_completos)
             
             st.session_state.doc_nombre = nombre_personalizado.replace(" ", "_")
             st.session_state.datos_cache = datos_completos
             
-            st.success("✅ ¡Archivos Word (.docx) y PDF (.pdf) generados con éxito!")
+            st.success("✅ ¡Archivos Word (.docx) y PDF (.pdf) generados de forma homologada con éxito!")
             
         except Exception as error:
             st.error(f"⚠️ Ocurrió un detalle técnico al procesar los archivos: {str(error)}")
