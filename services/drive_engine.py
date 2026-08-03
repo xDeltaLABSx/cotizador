@@ -11,6 +11,18 @@ def obtener_servicio_drive():
         if "gcp_service_account" in st.secrets:
             secretos = dict(st.secrets["gcp_service_account"])
             
+            if "private_key" in secretos:
+                pk = secretos["private_key"].strip()
+                # Si la llave viene comprimida en una sola línea sin saltos reales, la reparamos por código
+                if "----BEGIN PRIVATE KEY----" in pk and "\n" not in pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", ""):
+                    # Limpiamos encabezados y pies para dejar solo el cuerpo base64
+                    cuerpo = pk.replace("-----BEGIN PRIVATE KEY-----", "").replace("-----END PRIVATE KEY-----", "").strip()
+                    # Reconstruimos la llave con saltos de línea exactos cada 64 caracteres (estándar PEM)
+                    lineas_cuerpo = [cuerpo[i:i+64] for i in range(0, len(cuerpo), 64)]
+                    pk = "-----BEGIN PRIVATE KEY-----\n" + "\n".join(lineas_cuerpo) + "\n-----END PRIVATE KEY-----"
+                
+                secretos["private_key"] = pk
+
             creds = service_account.Credentials.from_service_account_info(
                 secretos, 
                 scopes=["https://www.googleapis.com/auth/drive"]
